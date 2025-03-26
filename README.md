@@ -1,2 +1,7 @@
-# if3210-tubes-mad-2025-if3210-2025-mad-ify
-if3210-tubes-mad-2025-if3210-2025-mad-ify created by GitHub Classroom
+# Pada setiap repository ditambahkan sebuah README yang setidaknya berisi:
+Deskripsi aplikasi.
+Library yang digunakan.
+Screenshot aplikasi (dimasukkan dalam folder screenshot).
+Pembagian kerja anggota kelompok.
+Jumlah jam persiapan dan pengerjaan untuk masing-masing anggota.
+
