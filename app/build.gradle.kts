@@ -5,12 +5,12 @@ plugins {
 
 android {
     namespace = "com.example.purrytify"
-    compileSdk = 35
+    compileSdk = 34
 
     defaultConfig {
         applicationId = "com.example.purrytify"
-        minSdk = 24
-        targetSdk = 35
+        minSdk = 29
+        targetSdk = 34
         versionCode = 1
         versionName = "1.0"
 
@@ -39,8 +39,8 @@ android {
 }
 
 dependencies {
-
-    implementation(libs.androidx.core.ktx)
+//    implementation(libs.androidx.core.ktx)
+    implementation("androidx.core:core-ktx:1.13.1")
     implementation(libs.androidx.appcompat)
     implementation(libs.material)
     implementation(libs.androidx.constraintlayout)
