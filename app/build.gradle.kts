@@ -40,6 +40,17 @@ android {
 
 dependencies {
 //    implementation(libs.androidx.core.ktx)
+    val compose_version = "1.6.3"
+    val compose_material_version = "1.6.3"
+    val compose_ui_version = "1.6.3"
+
+    implementation ("androidx.compose.ui:ui:$compose_ui_version")
+    implementation ("androidx.compose.material:material:$compose_material_version")
+    implementation ("androidx.compose.ui:ui-tooling-preview:$compose_ui_version")
+    debugImplementation ("androidx.compose.ui:ui-tooling:$compose_ui_version")
+    implementation ("androidx.compose.runtime:runtime:$compose_version")
+    implementation ("androidx.activity:activity-compose:1.8.2")
+
     implementation("androidx.core:core-ktx:1.13.1")
     implementation(libs.androidx.appcompat)
     implementation(libs.material)
