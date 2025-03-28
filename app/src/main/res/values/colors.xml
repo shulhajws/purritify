@@ -8,4 +8,8 @@
     <color name="teal_700">#FF018786</color>
     <color name="black">#FF000000</color>
     <color name="white">#FFFFFFFF</color>
+
+    <!-- Bottom Navigation Colors -->
+    <color name="bottom_nav_active">#FFFFFFFF</color>
+    <color name="bottom_nav_inactive">#B3FFFFFF</color>
 </resources>
