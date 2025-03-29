@@ -3,12 +3,23 @@ package com.example.purrytify.ui.home
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
@@ -16,15 +27,13 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import coil.compose.rememberAsyncImagePainter
 import com.example.purrytify.model.Song
+import com.example.purrytify.ui.theme.SoftGray
+import com.example.purrytify.ui.theme.White
 
 @Composable
 fun HomeScreen(viewModel: HomeViewModel, onSongClick: (String) -> Unit) {
@@ -34,7 +43,7 @@ fun HomeScreen(viewModel: HomeViewModel, onSongClick: (String) -> Unit) {
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color.Black)
+            .background(MaterialTheme.colorScheme.background)
             .verticalScroll(rememberScrollState())
     ) {
         Column(
@@ -45,9 +54,10 @@ fun HomeScreen(viewModel: HomeViewModel, onSongClick: (String) -> Unit) {
             // New Songs Section
             Text(
                 text = "New songs",
-                color = Color.White,
-                fontSize = 24.sp,
-                fontWeight = FontWeight.Bold,
+                color = White,
+                style = MaterialTheme.typography.headlineMedium,
+//                fontSize = 24.sp,
+//                fontWeight = FontWeight.Bold,
                 modifier = Modifier.padding(bottom = 16.dp)
             )
 
@@ -68,9 +78,10 @@ fun HomeScreen(viewModel: HomeViewModel, onSongClick: (String) -> Unit) {
             // Recently Played Section
             Text(
                 text = "Recently played",
-                color = Color.White,
-                fontSize = 24.sp,
-                fontWeight = FontWeight.Bold,
+                color = White,
+                style = MaterialTheme.typography.headlineMedium,
+//                fontSize = 24.sp,
+//                fontWeight = FontWeight.Bold,
                 modifier = Modifier.padding(bottom = 16.dp)
             )
 
@@ -108,16 +119,18 @@ fun NewSongItem(song: Song, onSongClick: () -> Unit) {
 
         Text(
             text = song.title,
-            color = Color.White,
-            fontSize = 14.sp,
+            color = White,
+            style = MaterialTheme.typography.bodyMedium,
+//            fontSize = 14.sp,
             maxLines = 1,
             overflow = TextOverflow.Ellipsis
         )
 
         Text(
             text = song.artist,
-            color = Color.Gray,
-            fontSize = 12.sp,
+            style = MaterialTheme.typography.labelMedium,
+            color = SoftGray,
+//            fontSize = 12.sp,
             maxLines = 1,
             overflow = TextOverflow.Ellipsis
         )
@@ -139,6 +152,15 @@ fun RecentlyPlayedItem(song: Song, onSongClick: () -> Unit) {
             modifier = Modifier
                 .size(56.dp)
                 .clip(RoundedCornerShape(4.dp))
+//            for further development, consider
+//            rememberAsyncImagePainter(
+//                model = song.albumArt,
+//                imageLoader = ImageLoader.Builder(context)
+//                    .size(Size.ORIGINAL) // Prevent size-based decoding drops
+//                    .build(),
+//                placeholder = painterResource(R.drawable.placeholder),
+//                error = painterResource(R.drawable.error_placeholder)
+//            )
         )
 
         Spacer(modifier = Modifier.width(16.dp))
@@ -148,17 +170,19 @@ fun RecentlyPlayedItem(song: Song, onSongClick: () -> Unit) {
         ) {
             Text(
                 text = song.title,
-                color = Color.White,
-                fontSize = 16.sp,
-                fontWeight = FontWeight.Medium,
+                color = White,
+                style = MaterialTheme.typography.bodyLarge,
+//                fontSize = 16.sp,
+//                fontWeight = FontWeight.Medium,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis
             )
 
             Text(
                 text = song.artist,
-                color = Color.Gray,
-                fontSize = 14.sp,
+                color = SoftGray,
+                style = MaterialTheme.typography.bodyMedium,
+//                fontSize = 14.sp,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis
             )

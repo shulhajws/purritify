@@ -25,21 +25,21 @@ class HomeViewModel : ViewModel() {
     private fun loadNewSongs() {
         // In a real app, this would come from a repository or API
         _newSongs.value = listOf(
-            Song("1", "Starboy", "The Weeknd, Daft Punk", "https://placekitten.com/200/200"),
-            Song("2", "Here Comes The Sun", "The Beatles", "https://placekitten.com/201/201"),
-            Song("3", "Midnight Pretenders", "Tomoko Aran", "https://placekitten.com/202/202"),
-            Song("4", "Violet", "Kaho", "https://placekitten.com/203/203")
+            Song("1", "Starboy", "The Weeknd, Daft Punk", "https://picsum.photos/200/200?random=1"),
+            Song("2", "Here Comes The Sun", "The Beatles", "https://picsum.photos/200/200?random=2"),
+            Song("3", "Midnight Pretenders", "Tomoko Aran", "https://picsum.photos/200/200?random=3"),
+            Song("4", "Violet", "Kaho", "https://picsum.photos/200/200?random=4")
         )
     }
 
     private fun loadRecentlyPlayedSongs() {
         // In a real app, this would come from a repository or API
         _recentlyPlayedSongs.value = listOf(
-            Song("5", "Jazz is for ordinary people", "berlioz", "https://placekitten.com/204/204"),
-            Song("6", "Loose", "Daniel Caesar", "https://placekitten.com/205/205"),
-            Song("7", "Nights", "Frank Ocean", "https://placekitten.com/206/206"),
-            Song("8", "Kiss of Life", "Sade", "https://placekitten.com/207/207"),
-            Song("9", "BEST INTEREST", "Tyler, The Creator", "https://placekitten.com/208/208")
+            Song("5", "Jazz is for ordinary people", "berlioz", "https://picsum.photos/200/200?random=5"),
+            Song("6", "Loose", "Daniel Caesar", "https://picsum.photos/200/200?random=6"),
+            Song("7", "Nights", "Frank Ocean", "https://picsum.photos/200/200?random=7"),
+            Song("8", "Kiss of Life", "Sade", "https://picsum.photos/200/200?random=8"),
+            Song("9", "BEST INTEREST", "Tyler, The Creator", "https://picsum.photos/200/200?random=9")
         )
     }
 
