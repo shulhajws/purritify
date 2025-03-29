@@ -7,6 +7,7 @@
     <color name="soft_gray">#FFB3B3B3</color>     <!-- 0xFFB3B3B3 -->
     <color name="white">#FFFFFFFF</color>          <!-- 0xFFFFFFFF -->
     <color name="black">#FF000000</color>          <!-- 0xFF000000 -->
+    <color name="teal_green">#FF00667B</color>
 
     <color name="primary">@color/spotify_green</color>
     <color name="background">@color/dark_black</color>
@@ -14,4 +15,5 @@
     <color name="on_surface">@color/white</color>
     <color name="bottom_nav_active">@color/white</color>
     <color name="bottom_nav_inactive">@color/soft_gray</color>
+    <color name="profile_page_gradient">@color/teal_green</color>
 </resources>
