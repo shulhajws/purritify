@@ -44,7 +44,8 @@ class LibraryFragment : Fragment() {
                 ) {
                     LibraryScreen(
                         viewModel = libraryViewModel,
-                        onSongClick = { songId -> navigateToPlayback(songId) }
+                        onSongClick = { songId -> navigateToPlayback(songId) },
+                        onAddClick = { navigateToAddSong() }
                     )
                 }
             }
@@ -56,6 +57,10 @@ class LibraryFragment : Fragment() {
             putString("song_id", songId)
         }
         navController.navigate(R.id.navigation_song_playback, bundle)
+    }
+
+    private fun navigateToAddSong() {
+        navController.navigate(R.id.action_library_to_add_song)
     }
 
     override fun onDestroyView() {

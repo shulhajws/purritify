@@ -7,6 +7,8 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
@@ -19,9 +21,13 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import coil.compose.rememberAsyncImagePainter
 import com.example.purrytify.model.Song
+import com.example.purrytify.ui.theme.White
 
 @Composable
-fun LibraryScreen(viewModel: LibraryViewModel, onSongClick: (String) -> Unit) {
+fun LibraryScreen(viewModel: LibraryViewModel,
+                  onSongClick: (String) -> Unit,
+                  onAddClick: () -> Unit
+) {
     val allSongs by viewModel.allSongs.collectAsState()
     val likedSongs by viewModel.likedSongs.collectAsState()
     val selectedTab by viewModel.selectedTab.collectAsState()
@@ -34,23 +40,39 @@ fun LibraryScreen(viewModel: LibraryViewModel, onSongClick: (String) -> Unit) {
     ) {
         Spacer(modifier = Modifier.height(12.dp))
 
-        // Tab selection
         Row(
-            modifier = Modifier.padding(bottom = 12.dp)
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(bottom = 12.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
         ) {
-            TabButton(
-                text = "All",
-                isSelected = selectedTab == 0,
-                onClick = { viewModel.selectTab(0) }
-            )
+            Row {
+                TabButton(
+                    text = "All",
+                    isSelected = selectedTab == 0,
+                    onClick = { viewModel.selectTab(0) }
+                )
 
-            Spacer(modifier = Modifier.width(8.dp))
+                Spacer(modifier = Modifier.width(8.dp))
 
-            TabButton(
-                text = "Liked",
-                isSelected = selectedTab == 1,
-                onClick = { viewModel.selectTab(1) }
-            )
+                TabButton(
+                    text = "Liked",
+                    isSelected = selectedTab == 1,
+                    onClick = { viewModel.selectTab(1) }
+                )
+            }
+
+            IconButton(
+                onClick = onAddClick,
+                modifier = Modifier.size(30.dp)
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Add,
+                    contentDescription = "Add song",
+                    tint = White
+                )
+            }
         }
         HorizontalDivider(
             modifier = Modifier
