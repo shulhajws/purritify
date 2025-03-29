@@ -22,4 +22,10 @@
         android:name="com.example.purrytify.ui.profile.ProfileFragment"
         android:label="@string/title_profile"
         tools:layout="@layout/fragment_profile" />
+
+    <fragment
+        android:id="@+id/navigation_song_playback"
+        android:name="com.example.purrytify.ui.playback.SongPlaybackFragment"
+        android:label="Song Playback"
+        tools:layout="@layout/fragment_song_playback" />
 </navigation>
