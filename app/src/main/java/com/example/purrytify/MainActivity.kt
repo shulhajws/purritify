@@ -24,13 +24,9 @@ class MainActivity : AppCompatActivity() {
         setContentView(binding.root)
 
         val navView: BottomNavigationView = binding.navView
-        headerTitle = binding.headerTitle
 
-        // Get the NavHostFragment
         val navHostFragment = supportFragmentManager
             .findFragmentById(R.id.nav_host_fragment_activity_main) as NavHostFragment
-
-        // Get the NavController from the NavHostFragment
         navController = navHostFragment.navController
 
         // Passing each menu ID as a set of Ids because each
@@ -41,12 +37,5 @@ class MainActivity : AppCompatActivity() {
             )
         )
         navView.setupWithNavController(navController)
-        navController.addOnDestinationChangedListener { _, destination, _ ->
-            when (destination.id) {
-                R.id.navigation_home -> headerTitle.text = getString(R.string.title_home)
-                R.id.navigation_library -> headerTitle.text = getString(R.string.title_library)
-                R.id.navigation_profile -> headerTitle.text = getString(R.string.title_profile)
-            }
-        }
     }
 }

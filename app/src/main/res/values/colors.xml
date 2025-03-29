@@ -1,15 +1,17 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <color name="primary">#FFBB86FC</color>
-    <color name="purple_200">#FFBB86FC</color>
-    <color name="purple_500">#FF6200EE</color>
-    <color name="purple_700">#FF3700B3</color>
-    <color name="teal_200">#FF03DAC5</color>
-    <color name="teal_700">#FF018786</color>
-    <color name="black">#FF000000</color>
-    <color name="white">#FFFFFFFF</color>
+    <color name="spotify_green">#FF1DB954</color>  <!-- 0xFF1DB954 -->
+    <color name="dark_black">#FF121212</color>     <!-- 0xFF121212 -->
+    <color name="soft_black">#FF212121</color>     <!-- 0xFF212121 -->
+    <color name="dark_gray">#FF535353</color>      <!-- 0xFF535353 -->
+    <color name="soft_gray">#FFB3B3B3</color>     <!-- 0xFFB3B3B3 -->
+    <color name="white">#FFFFFFFF</color>          <!-- 0xFFFFFFFF -->
+    <color name="black">#FF000000</color>          <!-- 0xFF000000 -->
 
-    <!-- Bottom Navigation Colors -->
-    <color name="bottom_nav_active">#FFFFFFFF</color>
-    <color name="bottom_nav_inactive">#B3FFFFFF</color>
+    <color name="primary">@color/spotify_green</color>
+    <color name="background">@color/dark_black</color>
+    <color name="surface">@color/soft_black</color>
+    <color name="on_surface">@color/white</color>
+    <color name="bottom_nav_active">@color/white</color>
+    <color name="bottom_nav_inactive">@color/soft_gray</color>
 </resources>

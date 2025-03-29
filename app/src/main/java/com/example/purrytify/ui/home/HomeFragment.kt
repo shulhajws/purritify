@@ -1,5 +1,6 @@
 package com.example.purrytify.ui.home
 
+import android.annotation.SuppressLint
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
@@ -29,12 +30,12 @@ class HomeFragment : Fragment() {
     ): View {
         homeViewModel = ViewModelProvider(this)[HomeViewModel::class.java]
         _binding = FragmentHomeBinding.inflate(inflater, container, false)
+        binding.fragmentHeaderTitle.text = getString(R.string.title_home)
         return binding.root
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-
         navController = NavHostFragment.findNavController(this)
 
         binding.homeComposeView.setContent {
