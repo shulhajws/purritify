@@ -32,7 +32,11 @@ class LibraryViewModel : ViewModel() {
             Song("3", "Midnight Pretenders", "Tomoko Aran", "https://picsum.photos/200/200?random=3"),
             Song("4", "Violent Crimes", "Kanye West", "https://picsum.photos/200/200?random=4"),
             Song("5", "DENIAL IS A RIVER", "Doechii", "https://picsum.photos/200/200?random=5"),
-            Song("6", "Doomsday", "MF DOOM, Pebbles The Invisible Girl", "https://picsum.photos/200/200?random=6")
+            Song("6", "Doomsday", "MF DOOM, Pebbles The Invisible Girl", "https://picsum.photos/200/200?random=6"),
+            Song("7", "Violent Crimes", "Kanye West", "https://picsum.photos/200/200?random=4"),
+            Song("8", "DENIAL IS A RIVER", "Doechii", "https://picsum.photos/200/200?random=5"),
+            Song("10", "Doomsday", "MF DOOM, Pebbles The Invisible Girl", "https://picsum.photos/200/200?random=6"),
+            Song("9", "Doomsday", "MF DOOM, Pebbles The Invisible Girl", "https://picsum.photos/200/200?random=1")
         )
     }
 

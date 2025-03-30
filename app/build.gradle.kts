@@ -76,6 +76,10 @@ dependencies {
     implementation(libs.androidx.navigation.fragment.ktx)
     implementation(libs.androidx.navigation.ui.ktx)
 
+    //Recycler View
+    implementation ("com.github.bumptech.glide:glide:4.15.1")
+    implementation ("androidx.recyclerview:recyclerview:1.3.2")
+
     // Testing Dependencies
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)

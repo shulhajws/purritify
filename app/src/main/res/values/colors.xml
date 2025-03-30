@@ -10,6 +10,7 @@
     <color name="teal_green">#FF00667B</color>
 
     <color name="primary">@color/spotify_green</color>
+    <color name="on_primary">@color/dark_black</color>
     <color name="background">@color/dark_black</color>
     <color name="surface">@color/soft_black</color>
     <color name="on_surface">@color/white</color>
