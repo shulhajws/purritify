@@ -25,6 +25,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="All"
+                android:textAppearance="@style/Text.LabelLarge"
                 android:textAllCaps="false"
                 android:textColor="@color/white"
                 app:cornerRadius="50dp"
@@ -40,6 +41,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="Liked"
+                android:textAppearance="@style/Text.LabelLarge"
                 android:textAllCaps="false"
                 android:textColor="@color/white"
                 app:cornerRadius="50dp"
@@ -52,7 +54,7 @@
             android:layout_height="48dp"
             android:background="?attr/selectableItemBackgroundBorderless"
             android:contentDescription="Add song"
-            android:src="@drawable/ic_add_plain"
+            android:src="@drawable/ic_add"
             app:tint="@android:color/white" />
     </LinearLayout>
 

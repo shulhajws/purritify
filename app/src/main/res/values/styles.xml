@@ -48,6 +48,11 @@
         <item name="android:textSize">14sp</item>
     </style>
 
+    <style name="Text.LabelLarge">
+        <item name="android:fontFamily">@font/poppins_bold</item>
+        <item name="android:textSize">14sp</item>
+    </style>
+
     <style name="Text.LabelMedium">
         <item name="android:fontFamily">@font/poppins_medium</item>
         <item name="android:textSize">12sp</item>

@@ -16,7 +16,9 @@
             android:id="@+id/action_home_to_playback"
             app:destination="@id/navigation_song_playback"
             app:enterAnim="@android:anim/fade_in"
-            app:exitAnim="@android:anim/fade_out">
+            app:exitAnim="@android:anim/fade_out"
+            app:popUpTo="@id/navigation_home"
+            app:popUpToInclusive="false" >
             <argument android:name="songId" app:argType="string" />
         </action>
     </fragment>

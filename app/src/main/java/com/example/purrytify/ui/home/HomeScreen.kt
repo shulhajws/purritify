@@ -36,7 +36,10 @@ import com.example.purrytify.ui.theme.SoftGray
 import com.example.purrytify.ui.theme.White
 
 @Composable
-fun HomeScreen(viewModel: HomeViewModel, onSongClick: (String) -> Unit) {
+fun HomeScreen(
+    viewModel: HomeViewModel,
+    onSongClick: (Song) -> Unit
+) {
     val newSongs by viewModel.newSongs.collectAsState()
     val recentlyPlayedSongs by viewModel.recentlyPlayedSongs.collectAsState()
 
@@ -68,7 +71,7 @@ fun HomeScreen(viewModel: HomeViewModel, onSongClick: (String) -> Unit) {
                 items(newSongs) { song ->
                     NewSongItem(
                         song = song,
-                        onSongClick = { onSongClick(song.id) }
+                        onSongClick = { onSongClick(song) }
                     )
                 }
             }
@@ -91,7 +94,7 @@ fun HomeScreen(viewModel: HomeViewModel, onSongClick: (String) -> Unit) {
                 recentlyPlayedSongs.forEach { song ->
                     RecentlyPlayedItem(
                         song = song,
-                        onSongClick = { onSongClick(song.id) }
+                        onSongClick = { onSongClick(song) }
                     )
                 }
             }
@@ -152,15 +155,6 @@ fun RecentlyPlayedItem(song: Song, onSongClick: () -> Unit) {
             modifier = Modifier
                 .size(56.dp)
                 .clip(RoundedCornerShape(4.dp))
-//            for further development, consider
-//            rememberAsyncImagePainter(
-//                model = song.albumArt,
-//                imageLoader = ImageLoader.Builder(context)
-//                    .size(Size.ORIGINAL) // Prevent size-based decoding drops
-//                    .build(),
-//                placeholder = painterResource(R.drawable.placeholder),
-//                error = painterResource(R.drawable.error_placeholder)
-//            )
         )
 
         Spacer(modifier = Modifier.width(16.dp))

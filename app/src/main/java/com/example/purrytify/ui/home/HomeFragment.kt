@@ -9,11 +9,13 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.ui.Modifier
 import androidx.fragment.app.Fragment
+import androidx.fragment.app.activityViewModels
 import androidx.lifecycle.ViewModelProvider
 import androidx.navigation.NavController
 import androidx.navigation.fragment.NavHostFragment
 import com.example.purrytify.R
 import com.example.purrytify.databinding.FragmentHomeBinding
+import com.example.purrytify.ui.playback.PlayerViewModel
 import com.example.purrytify.ui.theme.PurrytifyTheme
 
 class HomeFragment : Fragment() {
@@ -21,6 +23,7 @@ class HomeFragment : Fragment() {
     private val binding get() = _binding!!
     private lateinit var homeViewModel: HomeViewModel
     private lateinit var navController: NavController
+    private val playerViewModel: PlayerViewModel by activityViewModels()
 
     override fun onCreateView(
         inflater: LayoutInflater,
@@ -45,7 +48,10 @@ class HomeFragment : Fragment() {
                 ) {
                     HomeScreen(
                         viewModel = homeViewModel,
-                        onSongClick = { songId -> navigateToPlayback(songId) }
+                        onSongClick = { song ->
+                            playerViewModel.playSong(song)
+                            navigateToPlayback(song.id)
+                        }
                     )
                 }
             }

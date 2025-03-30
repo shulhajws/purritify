@@ -10,7 +10,7 @@ import com.example.purrytify.R
 import com.example.purrytify.databinding.ItemLibrarySongBinding
 import com.example.purrytify.model.Song
 
-class LibrarySongAdapter(private val onSongClick: (String) -> Unit) :
+class LibrarySongAdapter(private val onSongClick: (Song) -> Unit) :
     ListAdapter<Song, LibrarySongAdapter.SongViewHolder>(SongDiffCallback()) {
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): SongViewHolder {
@@ -29,7 +29,7 @@ class LibrarySongAdapter(private val onSongClick: (String) -> Unit) :
                 val position = bindingAdapterPosition
                 if (position != RecyclerView.NO_POSITION) {
                     val song = getItem(position)
-                    onSongClick(song.id)
+                    onSongClick(song)
                 }
             }
         }

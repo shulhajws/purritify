@@ -6,6 +6,7 @@ import android.view.View
 import android.view.ViewGroup
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
+import androidx.fragment.app.activityViewModels
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.lifecycleScope
 import androidx.navigation.NavController
@@ -13,6 +14,7 @@ import androidx.navigation.fragment.NavHostFragment
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.example.purrytify.R
 import com.example.purrytify.databinding.FragmentLibraryBinding
+import com.example.purrytify.ui.playback.PlayerViewModel
 import com.google.android.material.button.MaterialButton
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.flatMapLatest
@@ -24,6 +26,7 @@ class LibraryFragment : Fragment() {
     private lateinit var libraryViewModel: LibraryViewModel
     private lateinit var navController: NavController
     private lateinit var songAdapter: LibrarySongAdapter
+    private val playerViewModel: PlayerViewModel by activityViewModels()
 
     override fun onCreateView(
         inflater: LayoutInflater,
@@ -54,7 +57,10 @@ class LibraryFragment : Fragment() {
 
         // Setup the RecyclerView
         val recyclerView = contentView.findViewById<androidx.recyclerview.widget.RecyclerView>(R.id.recycler_songs)
-        songAdapter = LibrarySongAdapter { songId -> navigateToPlayback(songId) }
+        songAdapter = LibrarySongAdapter { song ->
+            playerViewModel.playSong(song)
+            navigateToPlayback(song.id)
+        }
         recyclerView.apply {
             layoutManager = LinearLayoutManager(requireContext())
             adapter = songAdapter

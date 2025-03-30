@@ -1,35 +1,46 @@
 package com.example.purrytify
 
 import android.os.Bundle
-import android.widget.TextView
-import com.google.android.material.bottomnavigation.BottomNavigationView
+import android.view.View
+import android.view.ViewGroup
+import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.ComposeView
+import androidx.core.os.bundleOf
+import androidx.lifecycle.lifecycleScope
 import androidx.navigation.NavController
 import androidx.navigation.fragment.NavHostFragment
 import androidx.navigation.ui.AppBarConfiguration
 import androidx.navigation.ui.setupWithNavController
 import com.example.purrytify.databinding.ActivityMainBinding
+import com.example.purrytify.ui.playback.PlayerViewModel
+import com.google.android.material.bottomnavigation.BottomNavigationView
+import kotlinx.coroutines.flow.launchIn
+import kotlinx.coroutines.flow.onEach
 
 class MainActivity : AppCompatActivity() {
-
     private lateinit var binding: ActivityMainBinding
     private lateinit var navController: NavController
     private lateinit var appBarConfiguration: AppBarConfiguration
-//    private lateinit var headerTitle: TextView
+    private val playerViewModel: PlayerViewModel by viewModels()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
+        // Setup navigation
         val navView: BottomNavigationView = binding.navView
-
         val navHostFragment = supportFragmentManager
             .findFragmentById(R.id.nav_host_fragment_activity_main) as NavHostFragment
         navController = navHostFragment.navController
 
-        val appBarConfiguration = AppBarConfiguration(
+        appBarConfiguration = AppBarConfiguration(
             setOf(
                 R.id.navigation_home,
                 R.id.navigation_library,
@@ -37,5 +48,57 @@ class MainActivity : AppCompatActivity() {
             )
         )
         navView.setupWithNavController(navController)
+
+        // Mini Player Container
+        val miniPlayerContainer = binding.miniPlayerContainer
+        val composeView = ComposeView(this).apply {
+            layoutParams = ViewGroup.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT,
+                ViewGroup.LayoutParams.WRAP_CONTENT
+            )
+        }
+        miniPlayerContainer.addView(composeView)
+
+        // Set content for the compose view
+        composeView.setContent {
+            val currentSong by playerViewModel.currentSong.collectAsState()
+            val isPlaying by playerViewModel.isPlaying.collectAsState()
+
+            MaterialTheme {
+                Surface(color = Color.Transparent) {
+                    currentSong?.let { song ->
+                        MiniPlayer(
+                            song = song.copy(isPlaying = isPlaying),
+                            onMiniPlayerClick = {
+                                navController.navigate(
+                                    R.id.navigation_song_playback,
+                                    bundleOf("song_id" to song.id)
+                                )
+                            },
+                            onPlayPauseClick = {
+                                playerViewModel.togglePlayPause()
+                            }
+                        )
+                    }
+                }
+            }
+        }
+
+        playerViewModel.currentSong
+            .onEach { song ->
+                binding.miniPlayerContainer.visibility = if (song != null) View.VISIBLE else View.GONE
+            }
+            .launchIn(lifecycleScope)
     }
 }
+
+//    private fun togglePlayPause() {
+//        // Update the current song's playing state
+//        currentSong = currentSong.copy(isPlaying = !currentSong.isPlaying)
+//    }
+//
+//    // Method to be called from fragments when a song is selected
+//    fun playSong(song: Song) {
+//        currentSong = song.copy(isPlaying = true)
+//        showMiniPlayer = true
+//    }
