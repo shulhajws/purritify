@@ -27,16 +27,16 @@ class LibraryViewModel : ViewModel() {
     private fun loadAllSongs() {
         // In a real app, this would come from a repository or API
         _allSongs.value = listOf(
-            Song("1", "Starboy", "The Weeknd, Daft Punk", "https://picsum.photos/200/200?random=1"),
-            Song("2", "Here Comes The Sun - Remastered", "The Beatles", "https://picsum.photos/200/200?random=2"),
-            Song("3", "Midnight Pretenders", "Tomoko Aran", "https://picsum.photos/200/200?random=3"),
-            Song("4", "Violent Crimes", "Kanye West", "https://picsum.photos/200/200?random=4"),
-            Song("5", "DENIAL IS A RIVER", "Doechii", "https://picsum.photos/200/200?random=5"),
-            Song("6", "Doomsday", "MF DOOM, Pebbles The Invisible Girl", "https://picsum.photos/200/200?random=6"),
-            Song("7", "Violent Crimes", "Kanye West", "https://picsum.photos/200/200?random=4"),
-            Song("8", "DENIAL IS A RIVER", "Doechii", "https://picsum.photos/200/200?random=5"),
-            Song("10", "Doomsday", "MF DOOM, Pebbles The Invisible Girl", "https://picsum.photos/200/200?random=6"),
-            Song("9", "Doomsday", "MF DOOM, Pebbles The Invisible Girl", "https://picsum.photos/200/200?random=1")
+            Song("1", "Starboy", "The Weeknd2, Daft Punk", "https://picsum.photos/200/200?random=1", "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3"),
+            Song("2", "Here Comes The Sun", "The Beatles", "https://picsum.photos/200/200?random=2", "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-2.mp3"),
+            Song("3", "Midnight Pretenders", "Tomoko Aran", "https://picsum.photos/200/200?random=3", "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-3.mp3"),
+            Song("4", "Blinding Lights", "The Weeknd", "https://picsum.photos/200/200?random=4", "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-4.mp3"),
+            Song("5", "Eleanor Rigby", "The Beatles", "https://picsum.photos/200/200?random=5", "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-5.mp3"),
+            Song("6", "Plastic Love", "Mariya Takeuchi", "https://picsum.photos/200/200?random=6", "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-6.mp3"),
+            Song("7", "Doomsday", "MF DOOM, Pebbles The Invisible Girl", "https://picsum.photos/200/200?random=7", "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-7.mp3"),
+            Song("8", "DENIAL IS A RIVER", "Doechii", "https://picsum.photos/200/200?random=8", "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-8.mp3"),
+            Song("9", "Violent Crimes", "Kanye West", "https://picsum.photos/200/200?random=9", "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-9.mp3"),
+            Song("10", "Some", "BOL4", "https://picsum.photos/200/200?random=10", "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-10.mp3")
         )
     }
 
@@ -44,9 +44,9 @@ class LibraryViewModel : ViewModel() {
         // In a real app, this would come from a repository or API
         // For now, just use a subset of all songs
         _likedSongs.value = listOf(
-            Song("1", "Starboy", "The Weeknd, Daft Punk", "https://picsum.photos/200/200?random=1"),
-            Song("3", "Midnight Pretenders", "Tomoko Aran", "https://picsum.photos/200/200?random=3"),
-            Song("6", "Doomsday", "MF DOOM, Pebbles The Invisible Girl", "https://picsum.photos/200/200?random=6")
+            Song("1", "Starboy", "The Weeknd3, Daft Punk", "https://picsum.photos/200/200?random=1", "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3"),
+            Song("3", "Midnight Pretenders", "Tomoko Aran", "https://picsum.photos/200/200?random=3", "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-3.mp3"),
+            Song("6", "Plastic Love", "Mariya Takeuchi", "https://picsum.photos/200/200?random=6", "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-6.mp3")
         )
     }
 

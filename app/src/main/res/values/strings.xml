@@ -3,4 +3,14 @@
     <string name="title_home">Home</string>
     <string name="title_library">Your Library</string>
     <string name="title_profile">Profile</string>
+
+    <string name="play">Play</string>
+    <string name="pause">Pause</string>
+    <string name="previous">Previous</string>
+    <string name="next">Next</string>
+    <string name="like">Like</string>
+    <string name="album_cover">Album Cover</string>
+    <string name="favorite_icon">Favorite Icon</string>
+    <string name="play_pause">Play Pause</string>
+
 </resources>

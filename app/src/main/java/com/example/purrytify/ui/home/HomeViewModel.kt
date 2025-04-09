@@ -25,21 +25,22 @@ class HomeViewModel : ViewModel() {
     private fun loadNewSongs() {
         // In a real app, this would come from a repository or API
         _newSongs.value = listOf(
-            Song("1", "Starboy", "The Weeknd, Daft Punk", "https://picsum.photos/200/200?random=1"),
-            Song("2", "Here Comes The Sun", "The Beatles", "https://picsum.photos/200/200?random=2"),
-            Song("3", "Midnight Pretenders", "Tomoko Aran", "https://picsum.photos/200/200?random=3"),
-            Song("4", "Violet", "Kaho", "https://picsum.photos/200/200?random=4")
+            Song("1", "Starboy", "The Weeknd1, Daft Punk", "https://picsum.photos/200/200?random=1", "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3"),
+            Song("2", "Here Comes The Sun", "The Beatles", "https://picsum.photos/200/200?random=2", "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-2.mp3"),
+            Song("3", "Midnight Pretenders", "Tomoko Aran", "https://picsum.photos/200/200?random=3", "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-3.mp3"),
+            Song("4", "Blinding Lights", "The Weeknd", "https://picsum.photos/200/200?random=4", "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-4.mp3")
         )
     }
 
     private fun loadRecentlyPlayedSongs() {
         // In a real app, this would come from a repository or API
         _recentlyPlayedSongs.value = listOf(
-            Song("5", "Jazz is for ordinary people", "berlioz", "https://picsum.photos/200/200?random=5"),
-            Song("6", "Loose", "Daniel Caesar", "https://picsum.photos/200/200?random=6"),
-            Song("7", "Nights", "Frank Ocean", "https://picsum.photos/200/200?random=7"),
-            Song("8", "Kiss of Life", "Sade", "https://picsum.photos/200/200?random=8"),
-            Song("9", "BEST INTEREST", "Tyler, The Creator", "https://picsum.photos/200/200?random=9")
+            Song("5", "Eleanor Rigby", "The Beatles", "https://picsum.photos/200/200?random=5", "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-5.mp3"),
+            Song("6", "Plastic Love", "Mariya Takeuchi", "https://picsum.photos/200/200?random=6", "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-6.mp3"),
+            Song("7", "Doomsday", "MF DOOM, Pebbles The Invisible Girl", "https://picsum.photos/200/200?random=7", "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-7.mp3"),
+            Song("8", "DENIAL IS A RIVER", "Doechii", "https://picsum.photos/200/200?random=8", "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-8.mp3"),
+            Song("9", "Violent Crimes", "Kanye West", "https://picsum.photos/200/200?random=9", "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-9.mp3"),
+            Song("10", "Some", "BOL4", "https://picsum.photos/200/200?random=10", "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-10.mp3")
         )
     }
 

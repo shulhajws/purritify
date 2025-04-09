@@ -9,7 +9,7 @@
     <item
         android:id="@+id/navigation_library"
         android:icon="@drawable/library_icon_active"
-        android:title="Library" />
+        android:title="Your Library" />
 
     <item
         android:id="@+id/navigation_profile"

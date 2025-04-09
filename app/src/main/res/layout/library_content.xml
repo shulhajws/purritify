@@ -41,8 +41,8 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="Liked"
-                android:textAppearance="@style/Text.LabelLarge"
                 android:textAllCaps="false"
+                android:textAppearance="@style/Text.LabelLarge"
                 android:textColor="@color/white"
                 app:cornerRadius="50dp"
                 app:strokeWidth="0dp" />

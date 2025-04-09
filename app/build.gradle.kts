@@ -2,6 +2,7 @@ plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.androidx.navigation.safe.args)
+    id("kotlin-parcelize")
 }
 
 android {
@@ -54,8 +55,9 @@ dependencies {
     implementation("androidx.compose.foundation:foundation:$compose_version")
     implementation("androidx.compose.runtime:runtime:$compose_version")
     implementation("androidx.compose.material3:material3:$material3_version")
-//    implementation("androidx.compose.material:material")
     implementation("androidx.compose.ui:ui-tooling-preview:$compose_version")
+    implementation ("com.squareup.picasso:picasso:2.71828")
+    implementation ("androidx.lifecycle:lifecycle-viewmodel-ktx:2.6.2")
 
     // Activity & Coil
     implementation("androidx.activity:activity-compose:1.8.2")

@@ -7,8 +7,7 @@ import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
+import androidx.compose.runtime.*
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.ComposeView
 import androidx.core.os.bundleOf
@@ -18,10 +17,11 @@ import androidx.navigation.fragment.NavHostFragment
 import androidx.navigation.ui.AppBarConfiguration
 import androidx.navigation.ui.setupWithNavController
 import com.example.purrytify.databinding.ActivityMainBinding
+import com.example.purrytify.ui.playback.MiniPlayer
 import com.example.purrytify.ui.playback.PlayerViewModel
 import com.google.android.material.bottomnavigation.BottomNavigationView
-import kotlinx.coroutines.flow.launchIn
-import kotlinx.coroutines.flow.onEach
+import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.launch
 
 class MainActivity : AppCompatActivity() {
     private lateinit var binding: ActivityMainBinding
@@ -40,6 +40,16 @@ class MainActivity : AppCompatActivity() {
             .findFragmentById(R.id.nav_host_fragment_activity_main) as NavHostFragment
         navController = navHostFragment.navController
 
+        navController.addOnDestinationChangedListener { _, destination, _ ->
+            if (destination.id == R.id.navigation_song_playback) {
+                binding.miniPlayerContainer.visibility = View.GONE
+            } else {
+                if (playerViewModel.currentSong.value != null) {
+                    binding.miniPlayerContainer.visibility = View.VISIBLE
+                }
+            }
+        }
+
         appBarConfiguration = AppBarConfiguration(
             setOf(
                 R.id.navigation_home,
@@ -49,56 +59,54 @@ class MainActivity : AppCompatActivity() {
         )
         navView.setupWithNavController(navController)
 
-        // Mini Player Container
-        val miniPlayerContainer = binding.miniPlayerContainer
+        // ComposeView setup
         val composeView = ComposeView(this).apply {
             layoutParams = ViewGroup.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT,
                 ViewGroup.LayoutParams.WRAP_CONTENT
             )
         }
-        miniPlayerContainer.addView(composeView)
+        binding.miniPlayerContainer.addView(composeView)
 
-        // Set content for the compose view
         composeView.setContent {
-            val currentSong by playerViewModel.currentSong.collectAsState()
-            val isPlaying by playerViewModel.isPlaying.collectAsState()
-
-            MaterialTheme {
-                Surface(color = Color.Transparent) {
-                    currentSong?.let { song ->
-                        MiniPlayer(
-                            song = song.copy(isPlaying = isPlaying),
-                            onMiniPlayerClick = {
-                                navController.navigate(
-                                    R.id.navigation_song_playback,
-                                    bundleOf("song_id" to song.id)
-                                )
-                            },
-                            onPlayPauseClick = {
-                                playerViewModel.togglePlayPause()
-                            }
-                        )
-                    }
-                }
-            }
+            MiniPlayerComposable(playerViewModel, navController)
         }
 
-        playerViewModel.currentSong
-            .onEach { song ->
-                binding.miniPlayerContainer.visibility = if (song != null) View.VISIBLE else View.GONE
+        // Menyembunyikan mini player saat currentSong null
+        lifecycleScope.launch {
+            playerViewModel.currentSong.collectLatest { song ->
+                val isInPlayerScreen = navController.currentDestination?.id == R.id.navigation_song_playback
+                binding.miniPlayerContainer.visibility =
+                    if (song != null && !isInPlayerScreen) View.VISIBLE else View.GONE
             }
-            .launchIn(lifecycleScope)
+        }
     }
 }
 
-//    private fun togglePlayPause() {
-//        // Update the current song's playing state
-//        currentSong = currentSong.copy(isPlaying = !currentSong.isPlaying)
-//    }
-//
-//    // Method to be called from fragments when a song is selected
-//    fun playSong(song: Song) {
-//        currentSong = song.copy(isPlaying = true)
-//        showMiniPlayer = true
-//    }
+@Composable
+fun MiniPlayerComposable(playerViewModel: PlayerViewModel, navController: NavController) {
+    val currentSong by playerViewModel.currentSong.collectAsState()
+    val isPlaying by playerViewModel.isPlaying.collectAsState()
+
+    MaterialTheme {
+        Surface(color = Color.Transparent) {
+            currentSong?.let { song ->
+                MiniPlayer(
+                    song = song,
+                    isPlaying = isPlaying,
+                    onMiniPlayerClick = {
+                        if (navController.currentDestination?.id != R.id.navigation_song_playback) {
+                            navController.navigate(
+                                R.id.navigation_song_playback,
+                                bundleOf("song_id" to song.id)
+                            )
+                        }
+                    },
+                    onPlayPauseClick = {
+                        playerViewModel.togglePlayPause()
+                    }
+                )
+            }
+        }
+    }
+}
