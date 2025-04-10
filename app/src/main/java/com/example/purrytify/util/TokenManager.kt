@@ -45,8 +45,8 @@ object TokenManager {
     }
 }
 
-// Abis login sukses, simpan token dengan cara
+// After successful login, save the token by calling
 // TokenManager.saveToken(context, response.token)
 
-// Ambil token dengan cara
+// To retrieve the token later, use
 // val token = TokenManager.getToken(context)
