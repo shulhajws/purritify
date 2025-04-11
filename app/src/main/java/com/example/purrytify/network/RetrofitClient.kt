@@ -13,6 +13,11 @@ object RetrofitClient {
             .build()
             .create(ApiService::class.java)
     }
+
+    // Optional: If you need to access the base URL for any reason
+     fun getBaseUrl(): String {
+         return BASE_URL
+     }
 }
 
 // Contoh Manggil:

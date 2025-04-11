@@ -1,12 +1,15 @@
 package com.example.purrytify.ui.profile
 
-import androidx.lifecycle.LiveData
-import androidx.lifecycle.MutableLiveData
+import android.content.Context
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
+import com.example.purrytify.model.UserProfile
+import com.example.purrytify.network.RetrofitClient
+import com.example.purrytify.util.TokenManager
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import com.example.purrytify.model.UserProfile
+import kotlinx.coroutines.launch
 
 class ProfileViewModel : ViewModel() {
     // Mock user profile data
@@ -46,6 +49,28 @@ class ProfileViewModel : ViewModel() {
         _songsCount.value = 135
         _likedCount.value = 32
         _listenedCount.value = 50
+    }
+
+    fun fetchUserProfile(context: Context) {
+        val token = TokenManager.getToken(context)
+        if (token.isNullOrEmpty()) return
+
+        viewModelScope.launch {
+            try {
+                val response = RetrofitClient.instance.getProfile("Bearer $token")
+                _userProfile.value = UserProfile(
+                    id = response.id,
+                    username = response.username,
+                    email = response.email,
+                    profilePhoto = "${RetrofitClient.getBaseUrl()}/uploads/profile-picture/${response.profilePhoto}",
+                    location = response.location,
+                    createdAt = response.createdAt,
+                    updatedAt = response.updatedAt
+                )
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+        }
     }
 }
 

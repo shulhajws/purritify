@@ -50,7 +50,7 @@ fun ProfileScreen(viewModel: ProfileViewModel) {
     val likedCount by viewModel.likedCount.collectAsState()
     val listenedCount by viewModel.listenedCount.collectAsState()
 
-    val buttonColor = DarkGray
+//    val buttonColor = DarkGray    // Uncomment this line to use DarkGray
     val textColor = White
     val secondaryTextColor = SoftGray
     val topColor = Color(0xFF00667B)
@@ -86,24 +86,11 @@ fun ProfileScreen(viewModel: ProfileViewModel) {
                             .size(140.dp)
                             .clip(CircleShape)
                     )
-
-                    Box(
-                        modifier = Modifier
-                            .align(Alignment.BottomEnd)
-                            .size(36.dp)
-                            .clip(CircleShape)
-                            .background(Color.White)
-                            .padding(8.dp)
-                    ) {
-                        Text(
-                            text = "✏️",
-                            textAlign = TextAlign.Center,
-                            modifier = Modifier.align(Alignment.Center)
-                        )
-                    }
                 }
 
                 Spacer(modifier = Modifier.height(16.dp))
+
+                // Display all of the information that UserProfile had
 
                 // Username
                 Text(
@@ -119,25 +106,29 @@ fun ProfileScreen(viewModel: ProfileViewModel) {
                     color = secondaryTextColor
                 )
 
-                Spacer(modifier = Modifier.height(24.dp))
+                // Email
+                Text(
+                    text = profile.email,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = secondaryTextColor
+                )
+                Spacer(modifier = Modifier.height(8.dp))
 
-                // Edit Profile Button
-                Button(
-                    onClick = { /* Handle edit profile click */ },
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = buttonColor
-                    ),
-                    shape = RoundedCornerShape(percent=50),
-                    modifier = Modifier
-                        .fillMaxWidth(0.5f)
-                        .height(48.dp)
-                ) {
-                    Text(
-                        text = "Edit Profile",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = White
-                    )
-                }
+                // Created At
+                Text(
+                    text = "Account Created at: ${profile.createdAt}",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = secondaryTextColor
+                )
+
+                // Updated At
+                Text(
+                    text = "Account Updated at: ${profile.updatedAt}",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = secondaryTextColor
+                )
+
+                Spacer(modifier = Modifier.height(24.dp))
 
                 // Logout Button
                 val context = LocalContext.current
@@ -163,7 +154,6 @@ fun ProfileScreen(viewModel: ProfileViewModel) {
                     modifier = Modifier
                         .fillMaxWidth(0.5f)
                         .height(48.dp)
-                        .padding(top = 16.dp)
                 ) {
                     Text(
                         text = "Logout",
