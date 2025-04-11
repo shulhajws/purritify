@@ -30,7 +30,10 @@ class HomeFragment : Fragment() {
         container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View {
-        homeViewModel = ViewModelProvider(this)[HomeViewModel::class.java]
+        homeViewModel = ViewModelProvider(
+            this,
+            ViewModelProvider.AndroidViewModelFactory.getInstance(requireActivity().application)
+        )[HomeViewModel::class.java]
         _binding = FragmentHomeBinding.inflate(inflater, container, false)
         binding.fragmentHeaderTitle.text = getString(R.string.title_home)
         return binding.root

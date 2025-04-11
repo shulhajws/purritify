@@ -56,5 +56,10 @@
     <fragment
         android:id="@+id/navigation_add_song"
         android:name="com.example.purrytify.ui.library.AddSongFragment"
-        android:label="Add Song"/>
+        android:label="Add Song">
+        <argument
+            android:name="songId"
+            android:defaultValue="-1L"
+            app:argType="long" />
+    </fragment>
 </navigation>
