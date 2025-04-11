@@ -1,5 +1,6 @@
 package com.example.purrytify
 
+import android.content.Intent
 import android.os.Bundle
 import android.view.View
 import android.view.ViewGroup
@@ -17,8 +18,10 @@ import androidx.navigation.fragment.NavHostFragment
 import androidx.navigation.ui.AppBarConfiguration
 import androidx.navigation.ui.setupWithNavController
 import com.example.purrytify.databinding.ActivityMainBinding
+import com.example.purrytify.ui.login.LoginActivity
 import com.example.purrytify.ui.playback.MiniPlayer
 import com.example.purrytify.ui.playback.PlayerViewModel
+import com.example.purrytify.util.TokenManager
 import com.google.android.material.bottomnavigation.BottomNavigationView
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
@@ -33,6 +36,17 @@ class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
+
+        // Check if user is logged in
+        val token = TokenManager.getToken(this)
+        if (token.isNullOrEmpty()) {
+            // User is not logged in, redirect to LoginActivity
+            startActivity(Intent(this, LoginActivity::class.java))
+            finish() // Close MainActivity
+        } else {
+            // User is logged in, proceed with MainActivity
+            // You can also fetch user data here if needed
+        }
 
         // Setup navigation
         val navView: BottomNavigationView = binding.navView
@@ -80,6 +94,7 @@ class MainActivity : AppCompatActivity() {
                     if (song != null && !isInPlayerScreen) View.VISIBLE else View.GONE
             }
         }
+
     }
 }
 

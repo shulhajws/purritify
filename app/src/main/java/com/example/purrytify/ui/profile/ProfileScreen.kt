@@ -1,5 +1,8 @@
 package com.example.purrytify.ui.profile
 
+import android.app.Activity
+import android.content.Intent
+import android.widget.Toast
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -27,14 +30,17 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import coil.compose.rememberAsyncImagePainter
+import com.example.purrytify.ui.login.LoginActivity
 import com.example.purrytify.ui.theme.DarkBlack
 import com.example.purrytify.ui.theme.DarkGray
 import com.example.purrytify.ui.theme.SoftGray
 import com.example.purrytify.ui.theme.White
+import com.example.purrytify.util.TokenManager
 
 
 @Composable
@@ -128,6 +134,39 @@ fun ProfileScreen(viewModel: ProfileViewModel) {
                 ) {
                     Text(
                         text = "Edit Profile",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = White
+                    )
+                }
+
+                // Logout Button
+                val context = LocalContext.current
+                Button(
+                    onClick = {
+                        // Clear the token
+                        TokenManager.clearToken(context)
+
+                        // Navigate to LoginActivity
+                        val intent = Intent(context, LoginActivity::class.java)
+                        context.startActivity(intent)
+
+                        // Toast message
+                        Toast.makeText(context, "Logged out successfully", Toast.LENGTH_SHORT).show()
+
+                        // Finish current activity "if needed"
+                        (context as? Activity)?.finish()
+                    },
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = Color.Red
+                    ),
+                    shape = RoundedCornerShape(percent = 50),
+                    modifier = Modifier
+                        .fillMaxWidth(0.5f)
+                        .height(48.dp)
+                        .padding(top = 16.dp)
+                ) {
+                    Text(
+                        text = "Logout",
                         style = MaterialTheme.typography.bodyMedium,
                         color = White
                     )
