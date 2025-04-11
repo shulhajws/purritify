@@ -50,7 +50,7 @@ fun ProfileScreen(viewModel: ProfileViewModel) {
     val likedCount by viewModel.likedCount.collectAsState()
     val listenedCount by viewModel.listenedCount.collectAsState()
 
-    val buttonColor = DarkGray
+//    val buttonColor = DarkGray    // Uncomment this line to use DarkGray
     val textColor = White
     val secondaryTextColor = SoftGray
     val topColor = Color(0xFF00667B)
@@ -86,24 +86,11 @@ fun ProfileScreen(viewModel: ProfileViewModel) {
                             .size(140.dp)
                             .clip(CircleShape)
                     )
-
-                    Box(
-                        modifier = Modifier
-                            .align(Alignment.BottomEnd)
-                            .size(36.dp)
-                            .clip(CircleShape)
-                            .background(Color.White)
-                            .padding(8.dp)
-                    ) {
-                        Text(
-                            text = "✏️",
-                            textAlign = TextAlign.Center,
-                            modifier = Modifier.align(Alignment.Center)
-                        )
-                    }
                 }
 
                 Spacer(modifier = Modifier.height(16.dp))
+
+                // Display all of the information that UserProfile had
 
                 // Username
                 Text(
@@ -116,6 +103,28 @@ fun ProfileScreen(viewModel: ProfileViewModel) {
                 Text(
                     text = profile.location,
                     style = MaterialTheme.typography.bodyMedium,
+                    color = secondaryTextColor
+                )
+
+                // Email
+                Text(
+                    text = profile.email,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = secondaryTextColor
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+
+                // Created At
+                Text(
+                    text = "Account Created at: ${profile.createdAt}",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = secondaryTextColor
+                )
+
+                // Updated At
+                Text(
+                    text = "Account Updated at: ${profile.updatedAt}",
+                    style = MaterialTheme.typography.bodySmall,
                     color = secondaryTextColor
                 )
 
