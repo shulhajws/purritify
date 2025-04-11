@@ -100,26 +100,19 @@ class AddSongViewModel(application: Application) : AndroidViewModel(application)
         try {
             val fileName = getFileNameFromUri(getApplication(), uri)
             _state.update { it.copy(songFileName = fileName) }
-
             val retriever = MediaMetadataRetriever()
             retriever.setDataSource(getApplication<Application>(), uri)
 
-            // Extract duration
             val durationStr = retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_DURATION)
             val duration = durationStr?.toLong() ?: 0
 
-            // Extract title if available
             val extractedTitle = retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_TITLE)
-            val title = if (!extractedTitle.isNullOrEmpty() && _state.value.title.isEmpty())
-                extractedTitle else _state.value.title
+            val title = if (!extractedTitle.isNullOrEmpty()) extractedTitle else fileName
 
-            // Extract artist if available
             val extractedArtist = retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_ARTIST)
-            val artist = if (!extractedArtist.isNullOrEmpty() && _state.value.artist.isEmpty())
-                extractedArtist else _state.value.artist
+            val artist = if (!extractedArtist.isNullOrEmpty()) extractedArtist else "Unknown Artist"
 
             retriever.release()
-
             _state.update {
                 it.copy(
                     songDuration = duration,
