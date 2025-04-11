@@ -33,7 +33,10 @@ class LibraryFragment : Fragment() {
         container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View {
-        libraryViewModel = ViewModelProvider(this)[LibraryViewModel::class.java]
+        libraryViewModel = ViewModelProvider(
+            this,
+            ViewModelProvider.AndroidViewModelFactory.getInstance(requireActivity().application)
+        )[LibraryViewModel::class.java]
         _binding = FragmentLibraryBinding.inflate(inflater, container, false)
         binding.fragmentHeaderTitle.text = getString(R.string.title_library)
         return binding.root
@@ -126,7 +129,10 @@ class LibraryFragment : Fragment() {
     }
 
     private fun navigateToAddSong() {
-        navController.navigate(R.id.action_library_to_add_song)
+        val bundle = Bundle().apply {
+            putLong("songId", -1L)
+        }
+        navController.navigate(R.id.action_library_to_add_song, bundle)
     }
 
     override fun onDestroyView() {

@@ -1,52 +1,93 @@
 package com.example.purrytify.ui.library
 
+import android.app.AlertDialog
+import android.app.Application
+import android.net.Uri
+import android.widget.Toast
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.Text
-import androidx.compose.material3.TextFieldDefaults
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
+import androidx.compose.material.icons.filled.*
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.ViewModelProvider
+import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.rememberAsyncImagePainter
 
 @Composable
-fun AddSongScreen(onBackClick: () -> Unit) {
-    var title by remember { mutableStateOf("") }
-    var artist by remember { mutableStateOf("") }
+fun AddSongScreen(
+    onBackClick: () -> Unit,
+    songId: Long = -1,
+    viewModel: AddSongViewModel = viewModel(factory = ViewModelProvider.AndroidViewModelFactory.getInstance(LocalContext.current.applicationContext as Application))
+) {
+    val context = LocalContext.current
+    val state by viewModel.state.collectAsState()
+    val focusManager = LocalFocusManager.current
+
+    val songPickerLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.GetContent()
+    ) { uri: Uri? ->
+        uri?.let { viewModel.setSongUri(it) }
+    }
+
+    val artworkPickerLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.GetContent()
+    ) { uri: Uri? ->
+        uri?.let { viewModel.setArtworkUri(it) }
+    }
+
+    // Load song data if in edit mode
+    LaunchedEffect(songId) {
+        if (songId > 0) {
+            viewModel.loadSongData(songId)
+        }
+    }
+
+    // Check for save completion
+    LaunchedEffect(state.isSaved) {
+        if (state.isSaved) {
+            Toast.makeText(
+                context,
+                if (state.editMode) "Song updated successfully" else "Song added successfully",
+                Toast.LENGTH_SHORT
+            ).show()
+            viewModel.resetSaveState()
+            onBackClick()
+        }
+    }
+
+    // Showing Error
+    if (state.error != null) {
+        LaunchedEffect(state.error) {
+            Toast.makeText(context, state.error, Toast.LENGTH_LONG).show()
+            viewModel.clearError()
+        }
+    }
 
     Column(
         modifier = Modifier
             .fillMaxSize()
             .background(MaterialTheme.colorScheme.background)
             .padding(16.dp)
+            .clickable(indication = null, interactionSource = remember { MutableInteractionSource() }) {
+                focusManager.clearFocus()
+            }
     ) {
         Row(
             verticalAlignment = Alignment.CenterVertically,
@@ -61,11 +102,35 @@ fun AddSongScreen(onBackClick: () -> Unit) {
             }
             Spacer(modifier = Modifier.width(8.dp))
             Text(
-                text = "Upload Song",
+                text = if (state.editMode) "Edit Song" else "Upload Song",
                 style = MaterialTheme.typography.headlineMedium,
                 color = MaterialTheme.colorScheme.onBackground,
                 modifier = Modifier.weight(1f)
             )
+
+            // Add Delete button if in edit mode
+            if (state.editMode) {
+                IconButton(onClick = {
+                    // Show delete confirmation dialog
+                    val builder = AlertDialog.Builder(context)
+                    builder.setTitle("Delete Song")
+                    builder.setMessage("Are you sure you want to delete this song?")
+                    builder.setPositiveButton("Delete") { dialog, _ ->
+                        viewModel.deleteSong()
+                        dialog.dismiss()
+                    }
+                    builder.setNegativeButton("Cancel") { dialog, _ ->
+                        dialog.dismiss()
+                    }
+                    builder.show()
+                }) {
+                    Icon(
+                        imageVector = Icons.Default.Delete,
+                        contentDescription = "Delete Song",
+                        tint = MaterialTheme.colorScheme.error
+                    )
+                }
+            }
         }
 
         Spacer(modifier = Modifier.height(36.dp))
@@ -78,7 +143,7 @@ fun AddSongScreen(onBackClick: () -> Unit) {
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            // Upload Photo Button
+            // Upload Artwork Button
             Column(
                 horizontalAlignment = Alignment.CenterHorizontally,
                 modifier = Modifier.width(120.dp)
@@ -87,19 +152,31 @@ fun AddSongScreen(onBackClick: () -> Unit) {
                     modifier = Modifier
                         .size(120.dp)
                         .clip(RoundedCornerShape(8.dp))
-                        .clickable { /* TODO: Handle photo upload */ },
+                        .background(MaterialTheme.colorScheme.surfaceVariant)
+                        .clickable { artworkPickerLauncher.launch("image/*") },
                     contentAlignment = Alignment.Center
                 ) {
-                    Image(
-                        painter = rememberAsyncImagePainter(model = "file:///android_asset/upload_song_photo.png"),
-                        contentDescription = "Upload photo",
-                        modifier = Modifier.fillMaxSize(),
-                        contentScale = ContentScale.Fit
-                    )
+                    if (state.artworkUri != null) {
+                        // Show selected artwork
+                        Image(
+                            painter = rememberAsyncImagePainter(model = state.artworkUri),
+                            contentDescription = "Song artwork",
+                            modifier = Modifier.fillMaxSize(),
+                            contentScale = ContentScale.Crop
+                        )
+                    } else {
+                        // Show placeholder
+                        Icon(
+                            imageVector = Icons.Default.Image,
+                            contentDescription = "Upload artwork",
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.size(40.dp)
+                        )
+                    }
                 }
                 Spacer(modifier = Modifier.height(8.dp))
                 Text(
-                    text = "Upload Photo",
+                    text = "Upload Artwork",
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onBackground
                 )
@@ -114,19 +191,55 @@ fun AddSongScreen(onBackClick: () -> Unit) {
                     modifier = Modifier
                         .size(120.dp)
                         .clip(RoundedCornerShape(8.dp))
-                        .clickable { /* TODO: Handle file upload */ },
+                        .background(MaterialTheme.colorScheme.surfaceVariant)
+                        .clickable { songPickerLauncher.launch("audio/*") },
                     contentAlignment = Alignment.Center
                 ) {
-                    Image(
-                        painter = rememberAsyncImagePainter(model = "file:///android_asset/upload_song_file.png"),
-                        contentDescription = "Upload file",
-                        modifier = Modifier.fillMaxSize(),
-                        contentScale = ContentScale.Fit
-                    )
+                    if (state.songUri != null) {
+                        // Show file info when song is selected
+                        Column(
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            verticalArrangement = Arrangement.Center,
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .padding(8.dp)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.MusicNote,
+                                contentDescription = "Audio file",
+                                tint = MaterialTheme.colorScheme.primary,
+                                modifier = Modifier.size(32.dp)
+                            )
+                            Spacer(modifier = Modifier.height(4.dp))
+                            Text(
+                                text = state.songFileName,
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                maxLines = 2,
+                                overflow = TextOverflow.Ellipsis,
+                                textAlign = TextAlign.Center
+                            )
+                            if (state.songDuration > 0) {
+                                Text(
+                                    text = viewModel.formatDuration(state.songDuration),
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.primary
+                                )
+                            }
+                        }
+                    } else {
+                        // Show placeholder
+                        Icon(
+                            imageVector = Icons.Default.AudioFile,
+                            contentDescription = "Upload audio file",
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.size(40.dp)
+                        )
+                    }
                 }
                 Spacer(modifier = Modifier.height(8.dp))
                 Text(
-                    text = "Upload File",
+                    text = "Upload Audio",
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onBackground
                 )
@@ -148,8 +261,8 @@ fun AddSongScreen(onBackClick: () -> Unit) {
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
                 OutlinedTextField(
-                    value = title,
-                    onValueChange = { title = it },
+                    value = state.title,
+                    onValueChange = { viewModel.updateTitle(it) },
                     modifier = Modifier.fillMaxWidth(),
                     singleLine = true,
                     shape = RoundedCornerShape(8.dp),
@@ -168,8 +281,8 @@ fun AddSongScreen(onBackClick: () -> Unit) {
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
                 OutlinedTextField(
-                    value = artist,
-                    onValueChange = { artist = it },
+                    value = state.artist,
+                    onValueChange = { viewModel.updateArtist(it) },
                     modifier = Modifier.fillMaxWidth(),
                     singleLine = true,
                     shape = RoundedCornerShape(8.dp),
@@ -202,17 +315,24 @@ fun AddSongScreen(onBackClick: () -> Unit) {
             }
 
             Button(
-                onClick = { /* TODO: Handle save */ },
-                enabled = title.isNotEmpty() && artist.isNotEmpty(),
+                onClick = { viewModel.saveSong() },
+                enabled = state.title.isNotEmpty() && state.artist.isNotEmpty() && state.songUri != null && !state.isLoading,
                 shape = RoundedCornerShape(50),
                 colors = ButtonDefaults.buttonColors(
                     containerColor = MaterialTheme.colorScheme.primary,
                     contentColor = MaterialTheme.colorScheme.onPrimary
                 )
             ) {
-                Text("Save", style = MaterialTheme.typography.labelLarge)
+                if (state.isLoading) {
+                    CircularProgressIndicator(
+                        modifier = Modifier.size(24.dp),
+                        color = MaterialTheme.colorScheme.onPrimary,
+                        strokeWidth = 2.dp
+                    )
+                } else {
+                    Text(if (state.editMode) "Update" else "Save", style = MaterialTheme.typography.labelLarge)
+                }
             }
         }
-
     }
 }
