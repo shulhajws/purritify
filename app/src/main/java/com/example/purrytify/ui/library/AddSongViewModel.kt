@@ -18,6 +18,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import java.util.Date
 import java.util.concurrent.TimeUnit
 
 data class AddSongState(
@@ -31,7 +32,8 @@ data class AddSongState(
     val isSaved: Boolean = false,
     val error: String? = null,
     val editMode: Boolean = false,
-    val songId: Long = -1
+    val songId: Long = -1,
+    val uploadedAt: Date? = null
 )
 
 class AddSongViewModel(application: Application) : AndroidViewModel(application) {
@@ -145,11 +147,13 @@ class AddSongViewModel(application: Application) : AndroidViewModel(application)
             try {
                 val song = SongEntity(
                     id = if (currentState.editMode) currentState.songId else 0,
+                    userId = 0, //TODO: Set proper userId
                     title = currentState.title,
                     artist = currentState.artist,
                     duration = currentState.songDuration,
                     filePath = currentState.songUri.toString(),
-                    artworkPath = currentState.artworkUri?.toString()
+                    artworkPath = currentState.artworkUri?.toString(),
+                    uploadedAt = if (currentState.editMode) currentState.uploadedAt ?: Date() else Date()
                 )
 
                 if (currentState.editMode) {
