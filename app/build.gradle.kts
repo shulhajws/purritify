@@ -3,6 +3,8 @@ plugins {
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.androidx.navigation.safe.args)
     id("kotlin-parcelize")
+    alias(libs.plugins.kotlin.compose)
+    alias(libs.plugins.ksp)
 }
 
 android {
@@ -40,7 +42,14 @@ android {
         compose = true
     }
     composeOptions {
-        kotlinCompilerExtensionVersion = "1.5.14"
+        kotlinCompilerExtensionVersion = "1.6.3"
+    }
+    applicationVariants.all {
+        kotlin.sourceSets {
+            getByName(name) {
+                kotlin.srcDir("build/generated/ksp/$name/kotlin")
+            }
+        }
     }
 }
 
@@ -49,15 +58,16 @@ dependencies {
 //    implementation(platform("androidx.compose:compose-bom:2024.03.00"))
     val compose_version = "1.6.3"
     val material3_version = "1.2.0"
+    val room_version = "2.7.0"
 
     // Compose dependencies (No need to specify versions)
     implementation("androidx.compose.ui:ui:$compose_version")
     implementation("androidx.compose.foundation:foundation:$compose_version")
     implementation("androidx.compose.runtime:runtime:$compose_version")
     implementation("androidx.compose.material3:material3:$material3_version")
+    implementation ("androidx.compose.material:material-icons-extended:1.5.4")
     implementation("androidx.compose.ui:ui-tooling-preview:$compose_version")
     implementation ("com.squareup.picasso:picasso:2.71828")
-    implementation ("androidx.lifecycle:lifecycle-viewmodel-ktx:2.6.2")
 
     // Activity & Coil
     implementation("androidx.activity:activity-compose:1.8.2")
@@ -73,6 +83,7 @@ dependencies {
     implementation(libs.androidx.constraintlayout)
     implementation(libs.androidx.lifecycle.livedata.ktx)
     implementation(libs.androidx.lifecycle.viewmodel.ktx)
+    implementation ("androidx.lifecycle:lifecycle-viewmodel-compose:2.6.1")
 
     // Navigation Components
     implementation(libs.androidx.navigation.fragment.ktx)
@@ -81,6 +92,11 @@ dependencies {
     //Recycler View
     implementation ("com.github.bumptech.glide:glide:4.15.1")
     implementation ("androidx.recyclerview:recyclerview:1.3.2")
+
+    // Data
+    implementation("androidx.room:room-runtime:$room_version")
+    implementation("androidx.room:room-ktx:$room_version")
+    ksp("androidx.room:room-compiler:$room_version")
 
     // Testing Dependencies
     testImplementation(libs.junit)
