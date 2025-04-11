@@ -121,24 +121,6 @@ fun ProfileScreen(viewModel: ProfileViewModel) {
 
                 Spacer(modifier = Modifier.height(24.dp))
 
-                // Edit Profile Button
-                Button(
-                    onClick = { /* Handle edit profile click */ },
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = buttonColor
-                    ),
-                    shape = RoundedCornerShape(percent=50),
-                    modifier = Modifier
-                        .fillMaxWidth(0.5f)
-                        .height(48.dp)
-                ) {
-                    Text(
-                        text = "Edit Profile",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = White
-                    )
-                }
-
                 // Logout Button
                 val context = LocalContext.current
                 Button(
@@ -163,7 +145,6 @@ fun ProfileScreen(viewModel: ProfileViewModel) {
                     modifier = Modifier
                         .fillMaxWidth(0.5f)
                         .height(48.dp)
-                        .padding(top = 16.dp)
                 ) {
                     Text(
                         text = "Logout",
