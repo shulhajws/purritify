@@ -1,6 +1,7 @@
 package com.example.purrytify.ui.login
 
 import android.content.Context
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import com.example.purrytify.network.LoginRequest
 import com.example.purrytify.network.LoginResponse
@@ -17,9 +18,9 @@ class LoginViewModel : ViewModel() {
         RetrofitClient.instance.login(request).enqueue(object : Callback<LoginResponse> {
             override fun onResponse(call: Call<LoginResponse>, response: Response<LoginResponse>) {
                 if (response.isSuccessful) {
-                    val token = response.body()?.token
-                    if (token != null) {
-                        TokenManager.saveToken(context, token)
+                    val accessToken = response.body()?.accessToken
+                    if (accessToken != null) {
+                        TokenManager.saveToken(context, accessToken)
                         onSuccess()
                     } else {
                         onError("Token is null")
@@ -30,6 +31,7 @@ class LoginViewModel : ViewModel() {
             }
 
             override fun onFailure(call: Call<LoginResponse>, t: Throwable) {
+                Log.e("LoginViewModel", "Network error: ${t.message}")  // Log the error for debugging
                 onError("Network error: ${t.message}")
             }
         })
