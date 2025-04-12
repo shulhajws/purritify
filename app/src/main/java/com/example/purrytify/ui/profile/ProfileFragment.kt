@@ -131,6 +131,25 @@ class ProfileFragment : Fragment() {
                     } else {
                         // Get global user profile from SharedViewModel
                         val userProfile = sharedViewModel.globalUserProfile.collectAsState().value
+
+                        // If userProfile is null, force logout
+                        if (userProfile == null) {
+                            // Clear the token
+                            TokenManager.clearToken(requireContext())
+
+                            // Clear globalUserProfile variable
+                            sharedViewModel.clearGlobalUserProfile()
+
+                            // Navigate to LoginActivity
+                            val intent = Intent(requireContext(), LoginActivity::class.java)
+                            startActivity(intent)
+
+                            // Toast message
+                            Toast.makeText(requireContext(), "Session expired. Please log in again.", Toast.LENGTH_SHORT).show()
+
+                            // Finish current activity "if needed"
+                            (requireContext() as? Activity)?.finish()
+                        }
                         userProfile?.let {
                             ProfileScreen(userProfile = it)
                         }
