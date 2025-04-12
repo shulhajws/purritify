@@ -8,9 +8,13 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.Toast
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -18,9 +22,11 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.collectAsState
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.ViewModelProvider
@@ -63,39 +69,61 @@ class ProfileFragment : Fragment() {
                     color = MaterialTheme.colorScheme.background
                 ) {
                     if (!NetworkUtil.isNetworkAvailable(requireContext())) {
-                        Log.d("ProfileFragment", "No internet connection")
-                        NetworkUtil.NoInternetScreen()
-                        val context = LocalContext.current
-
-                        // Logout button
-                        Button(
-                            onClick = {
-                                // Clear the token
-                                TokenManager.clearToken(context)
-
-                                // Navigate to LoginActivity
-                                val intent = Intent(context, LoginActivity::class.java)
-                                context.startActivity(intent)
-
-                                // Toast message
-                                Toast.makeText(context, "Logged out successfully", Toast.LENGTH_SHORT).show()
-
-                                // Finish current activity "if needed"
-                                (context as? Activity)?.finish()
-                            },
-                            colors = ButtonDefaults.buttonColors(
-                                containerColor = Color.Red
-                            ),
-                            shape = RoundedCornerShape(percent = 50),
+                        Column(
                             modifier = Modifier
-                                .fillMaxWidth(0.5f)
-                                .height(48.dp)
+                                .fillMaxSize()
+                                .padding(32.dp),
+                            verticalArrangement = Arrangement.Center,
+                            horizontalAlignment = Alignment.CenterHorizontally
                         ) {
                             Text(
-                                text = "Logout",
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = White
+                                text = "Tidak ada koneksi internet 😕",
+                                style = MaterialTheme.typography.headlineSmall,
+                                color = MaterialTheme.colorScheme.onBackground
                             )
+
+                            Spacer(modifier = Modifier.height(16.dp))
+
+                            Text(
+                                text = "Kamu tidak dapat memuat data profil saat ini.\nSilakan cek koneksi internetmu atau logout untuk masuk kembali.",
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onBackground,
+                                textAlign = TextAlign.Center
+                            )
+
+                            Spacer(modifier = Modifier.height(32.dp))
+
+                            // Logout Button
+                            val context = LocalContext.current
+                            Button(
+                                onClick = {
+                                    // Clear the token
+                                    TokenManager.clearToken(context)
+
+                                    // Navigate to LoginActivity
+                                    val intent = Intent(context, LoginActivity::class.java)
+                                    context.startActivity(intent)
+
+                                    // Toast message
+                                    Toast.makeText(context, "Logged out successfully", Toast.LENGTH_SHORT).show()
+
+                                    // Finish current activity "if needed"
+                                    (context as? Activity)?.finish()
+                                },
+                                colors = ButtonDefaults.buttonColors(
+                                    containerColor = Color.Red
+                                ),
+                                shape = RoundedCornerShape(percent = 50),
+                                modifier = Modifier
+                                    .fillMaxWidth(0.5f)
+                                    .height(48.dp)
+                            ) {
+                                Text(
+                                    text = "Logout",
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    color = White
+                                )
+                            }
                         }
                     } else {
                         // Get global user profile from SharedViewModel
