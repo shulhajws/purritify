@@ -4,16 +4,21 @@ import android.content.Context
 import android.net.ConnectivityManager
 import android.net.Network
 import android.net.NetworkCapabilities
+import android.os.Bundle
+import android.view.View
 import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import com.example.purrytify.ui.profile.ProfileScreen
+import com.example.purrytify.ui.theme.PurrytifyTheme
 
 // Code below are Example of call NetworkUtil to handle internet issue in ProfileFragment.kt
 // 1. Check if the network is available in onViewCreated
@@ -23,18 +28,17 @@ import androidx.compose.ui.graphics.Color
 //override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
 //    super.onViewCreated(view, savedInstanceState)
 //
-//    if (!NetworkUtil.isNetworkAvailable(requireContext())) {
-//        binding.profileComposeView.setContent {
-//            NetworkUtil.NoInternetScreen()
-//        }
-//    } else {
-//        profileViewModel.fetchUserProfile(requireContext())
-//        binding.profileComposeView.setContent {
-//            PurrytifyTheme {
-//                Surface(
-//                    modifier = Modifier.fillMaxSize(),
-//                    color = MaterialTheme.colorScheme.background
-//                ) {
+//    binding.profileComposeView.setContent {
+//        PurrytifyTheme {
+//            Surface(
+//                modifier = Modifier.fillMaxSize(),
+//                color = MaterialTheme.colorScheme.background
+//            ) {
+//                if (!NetworkUtil.isNetworkAvailable(requireContext())) {
+//                    NetworkUtil.NoInternetScreen()
+//                } else {
+//                    // Fetch user profile data if network is available
+//                    profileViewModel.fetchUserProfile(requireContext())
 //                    ProfileScreen(viewModel = profileViewModel)
 //                }
 //            }
