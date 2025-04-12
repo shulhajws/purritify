@@ -8,6 +8,7 @@ import android.net.Uri
 import android.provider.MediaStore
 import android.provider.OpenableColumns
 import android.util.Log
+import android.widget.Toast
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.purrytify.data.AppDatabase
@@ -73,6 +74,7 @@ class AddSongViewModel(application: Application) : AndroidViewModel(application)
             } catch (e: Exception) {
                 _state.update { it.copy(error = "Error loading song: ${e.message}", isLoading = false) }
                 Log.e("AddSongViewModel", "Error loading song", e)
+                Toast.makeText(getApplication(), "Failed when loading the song", Toast.LENGTH_SHORT).show()
             }
         }
     }
@@ -123,6 +125,7 @@ class AddSongViewModel(application: Application) : AndroidViewModel(application)
         } catch (e: Exception) {
             _state.update { it.copy(error = "Error extracting metadata: ${e.message}") }
             Log.e("AddSongViewModel", "Error extracting metadata", e)
+            Toast.makeText(getApplication(), "Failed to extract song's metadata", Toast.LENGTH_SHORT).show()
         }
     }
 
@@ -170,6 +173,7 @@ class AddSongViewModel(application: Application) : AndroidViewModel(application)
                     )
                 }
                 Log.e("AddSongViewModel", "Error saving song", e)
+                Toast.makeText(getApplication(), "Failed to save the song", Toast.LENGTH_SHORT).show()
             }
         }
     }
@@ -204,6 +208,7 @@ class AddSongViewModel(application: Application) : AndroidViewModel(application)
                     )
                 }
                 Log.e("AddSongViewModel", "Error deleting song", e)
+                Toast.makeText(getApplication(), "Failed to delete the song", Toast.LENGTH_SHORT).show()
             }
         }
     }

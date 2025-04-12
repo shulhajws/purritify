@@ -2,6 +2,7 @@ package com.example.purrytify.ui.shared
 
 import android.content.Context
 import android.util.Log
+import android.widget.Toast
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.purrytify.model.UserProfile
@@ -37,6 +38,7 @@ class SharedViewModel : ViewModel() {
             } catch (e: Exception) {
                 e.printStackTrace()
                 Log.e("SharedViewModel", "Error fetching user profile: ${e.message}")
+                Toast.makeText(context, "Failed to fetch user profile", Toast.LENGTH_SHORT).show()
             }
         }
     }
