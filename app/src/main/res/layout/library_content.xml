@@ -65,6 +65,17 @@
         android:alpha="0.5"
         android:background="?attr/colorSurfaceVariant" />
 
+    <TextView
+        android:id="@+id/text_empty_state"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:gravity="center"
+        android:textColor="@color/on_surface"
+        android:alpha="0.7"
+        android:textSize="16sp"
+        android:text="No songs in library"
+        android:visibility="gone" />
+
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/recycler_songs"
         android:layout_width="match_parent"

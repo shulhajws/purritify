@@ -49,11 +49,4 @@ class LibraryViewModel(application: Application) : AndroidViewModel(application)
     fun selectTab(tabIndex: Int) {
         _selectedTab.value = tabIndex
     }
-
-    // Add function to toggle liked status
-//    fun toggleLiked(songId: String, liked: Boolean) {
-//        viewModelScope.launch {
-//            repository.toggleLiked(songId.toLong(), liked)
-//        }
-//    }
 }
