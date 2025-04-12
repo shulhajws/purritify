@@ -2,6 +2,7 @@ package com.example.purrytify.ui.login
 
 import android.content.Intent
 import android.os.Bundle
+import android.util.Log
 import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -27,7 +28,8 @@ class LoginActivity : ComponentActivity() {
                              finish()
                         },
                         onError = { error ->
-                            Toast.makeText(this, error, Toast.LENGTH_SHORT).show()
+                            Log.e("LoginActivity", "Login error -> $error")  // Log the error for debugging
+                            Toast.makeText(this, "Failed to login\nNo network connection", Toast.LENGTH_SHORT).show()
                         }
                     )
                 }
