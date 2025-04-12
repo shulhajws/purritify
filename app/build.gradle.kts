@@ -54,6 +54,7 @@ android {
 }
 
 dependencies {
+    implementation(libs.androidx.espresso.core)
     // Use Compose BOM to manage versions automatically
 //    implementation(platform("androidx.compose:compose-bom:2024.03.00"))
     val compose_version = "1.6.3"
@@ -107,6 +108,9 @@ dependencies {
     implementation("com.squareup.retrofit2:retrofit:2.9.0")
     implementation("com.squareup.retrofit2:converter-gson:2.9.0")
     implementation("androidx.security:security-crypto:1.1.0-alpha06")
+
+    // WorkManager dependency for periodic background tasks and ensures the task runs even if the app is closed
+    implementation("androidx.work:work-runtime-ktx:2.8.1")
 
     debugImplementation("androidx.compose.ui:ui-tooling:$compose_version")
 }

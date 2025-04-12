@@ -38,12 +38,14 @@
             app:exitAnim="@android:anim/slide_out_right"/>
     </fragment>
 
+    <!-- Profile -->
     <fragment
         android:id="@+id/navigation_profile"
         android:name="com.example.purrytify.ui.profile.ProfileFragment"
         android:label="@string/title_profile"
         tools:layout="@layout/fragment_profile" />
 
+    <!-- Song Playback -->
     <fragment
         android:id="@+id/navigation_song_playback"
         android:name="com.example.purrytify.ui.playback.SongPlaybackFragment"
@@ -51,8 +53,16 @@
         <argument
             android:name="songId"
             app:argType="string" />
+
+        <action
+            android:id="@+id/action_song_playback_to_edit_delete_song"
+            app:destination="@id/navigation_add_song"
+            app:popUpTo="@id/navigation_song_playback"
+            app:enterAnim="@android:anim/slide_in_left"
+            app:exitAnim="@android:anim/slide_out_right"/>
     </fragment>
 
+    <!-- Add Song -->
     <fragment
         android:id="@+id/navigation_add_song"
         android:name="com.example.purrytify.ui.library.AddSongFragment"

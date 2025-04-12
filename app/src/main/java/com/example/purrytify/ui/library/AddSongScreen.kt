@@ -2,7 +2,9 @@ package com.example.purrytify.ui.library
 
 import android.app.AlertDialog
 import android.app.Application
+import android.content.Intent
 import android.net.Uri
+import android.util.Log
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -40,16 +42,44 @@ fun AddSongScreen(
     val state by viewModel.state.collectAsState()
     val focusManager = LocalFocusManager.current
 
+    // Use OpenDocument instead of GetContent for song files to enable persistent permissions
     val songPickerLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.GetContent()
+        contract = ActivityResultContracts.OpenDocument()
     ) { uri: Uri? ->
-        uri?.let { viewModel.setSongUri(it) }
+        uri?.let {
+            try {
+                // Take persistent permissions immediately when the song is selected
+                val contentResolver = context.contentResolver
+                val takeFlags = Intent.FLAG_GRANT_READ_URI_PERMISSION
+                contentResolver.takePersistableUriPermission(uri, takeFlags)
+
+                // Now pass the URI to the ViewModel
+                viewModel.setSongUri(it)
+            } catch (e: Exception) {
+                Log.e("AddSongScreen", "Error taking song URI permission: ${e.message}")
+                Toast.makeText(context, "Failed to access audio file", Toast.LENGTH_SHORT).show()
+            }
+        }
     }
 
+    // Use OpenDocument for artwork as well to maintain consistency
     val artworkPickerLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.GetContent()
+        contract = ActivityResultContracts.OpenDocument()
     ) { uri: Uri? ->
-        uri?.let { viewModel.setArtworkUri(it) }
+        uri?.let {
+            try {
+                // Take persistent permissions for the artwork
+                val contentResolver = context.contentResolver
+                val takeFlags = Intent.FLAG_GRANT_READ_URI_PERMISSION
+                contentResolver.takePersistableUriPermission(uri, takeFlags)
+
+                // Now pass the URI to the ViewModel
+                viewModel.setArtworkUri(it)
+            } catch (e: Exception) {
+                Log.e("AddSongScreen", "Error taking artwork URI permission: ${e.message}")
+                Toast.makeText(context, "Failed to access image file", Toast.LENGTH_SHORT).show()
+            }
+        }
     }
 
     // Load song data if in edit mode
@@ -153,7 +183,7 @@ fun AddSongScreen(
                         .size(120.dp)
                         .clip(RoundedCornerShape(8.dp))
                         .background(MaterialTheme.colorScheme.surfaceVariant)
-                        .clickable { artworkPickerLauncher.launch("image/*") },
+                        .clickable { artworkPickerLauncher.launch(arrayOf("image/*")) },
                     contentAlignment = Alignment.Center
                 ) {
                     if (state.artworkUri != null) {
@@ -192,7 +222,7 @@ fun AddSongScreen(
                         .size(120.dp)
                         .clip(RoundedCornerShape(8.dp))
                         .background(MaterialTheme.colorScheme.surfaceVariant)
-                        .clickable { songPickerLauncher.launch("audio/*") },
+                        .clickable { songPickerLauncher.launch(arrayOf("audio/*")) },
                     contentAlignment = Alignment.Center
                 ) {
                     if (state.songUri != null) {
