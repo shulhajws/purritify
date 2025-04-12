@@ -21,7 +21,7 @@ class LibraryViewModel(application: Application) : AndroidViewModel(application)
     private val _allSongs = MutableStateFlow<List<Song>>(emptyList())
     val allSongs: StateFlow<List<Song>> = _allSongs.asStateFlow()
 
-    // For liked songs section (in a real app, you might have a separate table for this)
+    // For liked songs section
     private val _likedSongs = MutableStateFlow<List<Song>>(emptyList())
     val likedSongs: StateFlow<List<Song>> = _likedSongs.asStateFlow()
 
@@ -33,14 +33,15 @@ class LibraryViewModel(application: Application) : AndroidViewModel(application)
         val database = AppDatabase.getDatabase(application)
         repository = SongRepository(database.songDao())
 
-        // Load songs from repository
         viewModelScope.launch {
             repository.allSongs.asFlow().collect { songEntities ->
-                val songs = SongMapper.toSongList(songEntities)
-                _allSongs.value = songs
+                _allSongs.value = SongMapper.toSongList(songEntities)
+            }
+        }
 
-                // TODO: Logic for liked songs
-                _likedSongs.value = songs.filter { it.id.toLong() % 3 == 0L }
+        viewModelScope.launch {
+            repository.likedSongs.asFlow().collect { songEntities ->
+                _likedSongs.value = SongMapper.toSongList(songEntities)
             }
         }
     }
@@ -48,4 +49,11 @@ class LibraryViewModel(application: Application) : AndroidViewModel(application)
     fun selectTab(tabIndex: Int) {
         _selectedTab.value = tabIndex
     }
+
+    // Add function to toggle liked status
+//    fun toggleLiked(songId: String, liked: Boolean) {
+//        viewModelScope.launch {
+//            repository.toggleLiked(songId.toLong(), liked)
+//        }
+//    }
 }
