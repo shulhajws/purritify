@@ -13,7 +13,11 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import com.example.purrytify.ui.theme.DarkBlack
+import com.example.purrytify.ui.theme.DarkGray
+import com.example.purrytify.ui.theme.White
 
 // Code below are Example of call NetworkUtil to handle internet issue in ProfileFragment.kt
 // 1. Check if the network is available in onViewCreated
@@ -76,8 +80,13 @@ object NetworkUtil {
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .background(Color.LightGray),
-            contentAlignment = Alignment.Center
+                .background(
+                    brush = Brush.verticalGradient(
+                        colors = listOf(White, DarkBlack),
+                        startY = 0f,
+                        endY = 1000f
+                    )
+                )
         ) {
             Text(
                 text = "No internet connection. Please check your connection.",
