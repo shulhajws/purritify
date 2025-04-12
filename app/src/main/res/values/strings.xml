@@ -12,5 +12,6 @@
     <string name="album_cover">Album Cover</string>
     <string name="favorite_icon">Favorite Icon</string>
     <string name="play_pause">Play Pause</string>
-
+    <string name="back_button">Back Button</string>
+    <string name="more_options">More Options</string>
 </resources>

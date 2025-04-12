@@ -81,6 +81,12 @@ class SongPlaybackFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
+        // Add a back button or handle system back press
+        view.findViewById<ImageButton>(R.id.btn_back)?.setOnClickListener {
+            // Navigate back properly
+            navController.navigateUp()
+        }
+
         // Initialize NavController
         navController = NavHostFragment.findNavController(this)
 
