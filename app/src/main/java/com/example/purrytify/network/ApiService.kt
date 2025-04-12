@@ -19,6 +19,8 @@ data class UserProfileResponse(
 )
 
 interface ApiService {
+    // TODO: Define your API endpoints here, add new endpoints as needed
+
     // Login API
     @POST("/api/login")
     fun login(@Body request: LoginRequest): Call<LoginResponse>
@@ -28,4 +30,16 @@ interface ApiService {
     suspend fun getProfile(
         @Header("Authorization") token: String
     ): UserProfileResponse
+
+    // Verify Token API
+    @POST("/api/verify-token")
+    fun verifyToken(
+        @Header("Authorization") token: String
+    ): Call<Void>
+
+    // Refresh Token API
+    @POST("/api/refresh-token")
+    fun refreshToken(
+        @Body request: Map<String, String>
+    ): Call<LoginResponse>
 }
