@@ -7,6 +7,9 @@ import androidx.work.WorkerParameters
 import com.example.purrytify.network.RetrofitClient
 import com.example.purrytify.util.TokenManager
 import retrofit2.HttpException
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 
 class TokenVerificationWorker(
     context: Context,
@@ -14,8 +17,10 @@ class TokenVerificationWorker(
 ) : Worker(context, workerParams) {
 
     override fun doWork(): Result {
-        // Log the current time for debugging
-        Log.e("TokenWorker", "Running token verification at ${System.currentTimeMillis()}")
+        // Log the current time for debugging (Format waktu menjadi string yang lebih mudah dibaca
+        val dateFormat = SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault())
+        val currentTime = dateFormat.format(Date(System.currentTimeMillis()))
+        Log.e("TokenWorker", "Running token verification at $currentTime")
 
         val context = applicationContext
         val token = TokenManager.getToken(context)
