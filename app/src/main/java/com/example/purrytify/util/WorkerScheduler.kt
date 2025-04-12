@@ -13,7 +13,7 @@ fun scheduleTokenVerification(context: Context) {
     Log.e("TokenScheduler", "Scheduling periodic work")
 
     val workRequest = PeriodicWorkRequestBuilder<TokenVerificationWorker>(
-        5, TimeUnit.MINUTES // TODO: Use 15 minutes in release (Android production limit is 15), 5 minutes is only for debugging.
+        15, TimeUnit.MINUTES // Use 15 minutes in release (Android production limit is >= 15)
     ).build()
 
     WorkManager.getInstance(context).enqueueUniquePeriodicWork(

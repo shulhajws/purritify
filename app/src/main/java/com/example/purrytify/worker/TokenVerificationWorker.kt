@@ -2,6 +2,7 @@ package com.example.purrytify.worker
 
 import android.content.Context
 import android.util.Log
+import android.widget.Toast
 import androidx.work.Worker
 import androidx.work.WorkerParameters
 import com.example.purrytify.network.RetrofitClient
@@ -25,6 +26,8 @@ class TokenVerificationWorker(
         val context = applicationContext
         val token = TokenManager.getToken(context)
 
+        // Log the token for debugging
+        Log.e("TokenWorker", "Debug current token: $token")
 
         if (token.isNullOrEmpty()) {
             // No token available, consider logging out the user
@@ -43,6 +46,9 @@ class TokenVerificationWorker(
                 } else {
                     // Logout the user if no refresh token is available
                     TokenManager.clearToken(context)
+
+                    // Show toast message
+                    Toast.makeText(context, "Session expired. Please log in again.", Toast.LENGTH_SHORT).show()
                 }
             }
         } catch (e: HttpException) {
