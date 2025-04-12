@@ -28,7 +28,7 @@
             android:layout_alignParentEnd="true"
             android:background="?attr/selectableItemBackgroundBorderless"
             android:src="@drawable/ic_edit_pencil"
-            android:contentDescription="More Options" />
+            android:contentDescription="@string/more_options" />
 
         <ImageView
             android:id="@+id/image_album"
