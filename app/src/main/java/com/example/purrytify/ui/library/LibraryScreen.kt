@@ -1,173 +1,142 @@
-package com.example.purrytify.ui.library
+//package com.example.purrytify.ui.library
 //
-//import androidx.compose.foundation.Image
-//import androidx.compose.foundation.background
-//import androidx.compose.foundation.clickable
-//import androidx.compose.foundation.layout.*
-//import androidx.compose.foundation.lazy.LazyColumn
-//import androidx.compose.foundation.lazy.items
-//import androidx.compose.foundation.shape.RoundedCornerShape
-//import androidx.compose.material.icons.Icons
-//import androidx.compose.material.icons.filled.Add
-//import androidx.compose.material3.*
-//import androidx.compose.runtime.Composable
-//import androidx.compose.runtime.collectAsState
-//import androidx.compose.runtime.getValue
-//import androidx.compose.ui.Alignment
-//import androidx.compose.ui.Modifier
-//import androidx.compose.ui.draw.clip
-//import androidx.compose.ui.layout.ContentScale
-//import androidx.compose.ui.text.style.TextOverflow
-//import androidx.compose.ui.unit.dp
-//import coil.compose.rememberAsyncImagePainter
-//import com.example.purrytify.model.Song
-//import com.example.purrytify.ui.theme.White
+//import android.os.Bundle
+//import android.view.LayoutInflater
+//import android.view.View
+//import android.view.ViewGroup
+//import androidx.core.content.ContextCompat
+//import androidx.fragment.app.Fragment
+//import androidx.fragment.app.activityViewModels
+//import androidx.lifecycle.ViewModelProvider
+//import androidx.lifecycle.lifecycleScope
+//import androidx.navigation.NavController
+//import androidx.navigation.fragment.NavHostFragment
+//import androidx.recyclerview.widget.LinearLayoutManager
+//import com.example.purrytify.R
+//import com.example.purrytify.databinding.FragmentLibraryBinding
+//import com.example.purrytify.ui.playback.PlayerViewModel
+//import com.google.android.material.button.MaterialButton
+//import kotlinx.coroutines.ExperimentalCoroutinesApi
+//import kotlinx.coroutines.flow.flatMapLatest
+//import kotlinx.coroutines.launch
 //
-//@Composable
-//fun LibraryScreen(viewModel: LibraryViewModel,
-//                  onSongClick: (String) -> Unit,
-//                  onAddClick: () -> Unit
-//) {
-//    val allSongs by viewModel.allSongs.collectAsState()
-//    val likedSongs by viewModel.likedSongs.collectAsState()
-//    val selectedTab by viewModel.selectedTab.collectAsState()
+//class LibraryFragment : Fragment() {
+//    private var _binding: FragmentLibraryBinding? = null
+//    private val binding get() = _binding!!
+//    private lateinit var libraryViewModel: LibraryViewModel
+//    private lateinit var navController: NavController
+//    private lateinit var songAdapter: LibrarySongAdapter
+//    private val playerViewModel: PlayerViewModel by activityViewModels()
 //
-//    Column(
-//        modifier = Modifier
-//            .fillMaxSize()
-//            .background(MaterialTheme.colorScheme.background)
-//            .padding(horizontal = 16.dp)
-//    ) {
-//        Spacer(modifier = Modifier.height(12.dp))
+//    override fun onCreateView(
+//        inflater: LayoutInflater,
+//        container: ViewGroup?,
+//        savedInstanceState: Bundle?
+//    ): View {
+//        libraryViewModel = ViewModelProvider(
+//            this,
+//            ViewModelProvider.AndroidViewModelFactory.getInstance(requireActivity().application)
+//        )[LibraryViewModel::class.java]
+//        _binding = FragmentLibraryBinding.inflate(inflater, container, false)
+//        binding.fragmentHeaderTitle.text = getString(R.string.title_library)
+//        return binding.root
+//    }
 //
-//        Row(
-//            modifier = Modifier
-//                .fillMaxWidth()
-//                .padding(bottom = 12.dp),
-//            horizontalArrangement = Arrangement.SpaceBetween,
-//            verticalAlignment = Alignment.CenterVertically
-//        ) {
-//            Row {
-//                TabButton(
-//                    text = "All",
-//                    isSelected = selectedTab == 0,
-//                    onClick = { viewModel.selectTab(0) }
-//                )
+//    @OptIn(ExperimentalCoroutinesApi::class)
+//    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+//        super.onViewCreated(view, savedInstanceState)
+//        navController = NavHostFragment.findNavController(this)
 //
-//                Spacer(modifier = Modifier.width(8.dp))
+//        // Replace the ComposeView with regular layout
+//        val contentView = LayoutInflater.from(requireContext())
+//            .inflate(R.layout.library_content, binding.libraryComposeView, false)
+//        (binding.libraryComposeView.parent as ViewGroup).removeView(binding.libraryComposeView)
 //
-//                TabButton(
-//                    text = "Liked",
-//                    isSelected = selectedTab == 1,
-//                    onClick = { viewModel.selectTab(1) }
-//                )
-//            }
+//        // Add the new layout where the ComposeView was
+//        val layoutParams = binding.libraryComposeView.layoutParams
+//        contentView.layoutParams = layoutParams
+//        (binding.root as ViewGroup).addView(contentView,
+//            binding.root.indexOfChild(binding.fragmentHeaderTitle) + 1)
 //
-//            IconButton(
-//                onClick = onAddClick,
-//                modifier = Modifier.size(30.dp)
-//            ) {
-//                Icon(
-//                    imageVector = Icons.Default.Add,
-//                    contentDescription = "Add song",
-//                    tint = White
-//                )
-//            }
+//        // Setup the RecyclerView
+//        val recyclerView = contentView.findViewById<androidx.recyclerview.widget.RecyclerView>(R.id.recycler_songs)
+//        songAdapter = LibrarySongAdapter { song ->
+//            playerViewModel.playSong(song)
+//            navigateToPlayback(song.id)
 //        }
-//        HorizontalDivider(
-//            modifier = Modifier
-//                .fillMaxWidth()
-//                .padding(bottom = 16.dp),
-//            thickness = 1.dp,
-//            color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
-//        )
+//        recyclerView.apply {
+//            layoutManager = LinearLayoutManager(requireContext())
+//            adapter = songAdapter
+//        }
 //
-//        // Song list
-//        val songsToShow = if (selectedTab == 0) allSongs else likedSongs
+//        // Tab buttons
+//        val btnTabAll = contentView.findViewById<MaterialButton>(R.id.btn_tab_all)
+//        val btnTabLiked = contentView.findViewById<MaterialButton>(R.id.btn_tab_liked)
+//        updateTabAppearance(btnTabAll, btnTabLiked, 0)
+//        btnTabAll.setOnClickListener {
+//            libraryViewModel.selectTab(0)
+//            updateTabAppearance(btnTabAll, btnTabLiked, 0)
+//        }
+//        btnTabLiked.setOnClickListener {
+//            libraryViewModel.selectTab(1)
+//            updateTabAppearance(btnTabAll, btnTabLiked, 1)
+//        }
 //
-//        LazyColumn(
-//            verticalArrangement = Arrangement.spacedBy(16.dp),
-//            modifier = Modifier.fillMaxWidth()
-//        ) {
-//            items(songsToShow) { song ->
-//                LibrarySongItem(
-//                    song = song,
-//                    onSongClick = { onSongClick(song.id) }
-//                )
-//            }
+//        // Add button
+//        val btnAddSong = contentView.findViewById<View>(R.id.btn_add_song)
+//        btnAddSong.setOnClickListener {
+//            navigateToAddSong()
+//        }
+//
+//        // Observe the songs list
+//        viewLifecycleOwner.lifecycleScope.launch {
+//            libraryViewModel.selectedTab
+//                .flatMapLatest { tabIndex ->
+//                    updateTabAppearance(btnTabAll, btnTabLiked, tabIndex)
+//                    if (tabIndex == 0) libraryViewModel.allSongs else libraryViewModel.likedSongs
+//                }
+//                .collect { songs ->
+//                    songAdapter.submitList(songs)
+//                }
+//        }
+//
+//    }
+//
+//    private fun updateTabAppearance(btnAll: MaterialButton, btnLiked: MaterialButton, selectedTab: Int) {
+//        val primaryColor = ContextCompat.getColor(requireContext(), R.color.primary)
+//        val surfaceVariantColor = ContextCompat.getColor(requireContext(), R.color.surface)
+//        val onPrimaryColor = ContextCompat.getColor(requireContext(), R.color.on_primary)
+//        val onSurfaceVariantColor = ContextCompat.getColor(requireContext(), R.color.on_surface)
+//
+//        if (selectedTab == 0) {
+//            btnAll.setBackgroundColor(primaryColor)
+//            btnAll.setTextColor(onPrimaryColor)
+//            btnLiked.setBackgroundColor(surfaceVariantColor)
+//            btnLiked.setTextColor(onSurfaceVariantColor)
+//        } else {
+//            btnAll.setBackgroundColor(surfaceVariantColor)
+//            btnAll.setTextColor(onSurfaceVariantColor)
+//            btnLiked.setBackgroundColor(primaryColor)
+//            btnLiked.setTextColor(onPrimaryColor)
 //        }
 //    }
-//}
 //
-//@Composable
-//fun TabButton(
-//    text: String,
-//    isSelected: Boolean,
-//    onClick: () -> Unit
-//) {
-//    val backgroundColor = if (isSelected)
-//        MaterialTheme.colorScheme.primary
-//    else
-//        MaterialTheme.colorScheme.surfaceVariant
-//
-//    val textColor = if (isSelected)
-//        MaterialTheme.colorScheme.onPrimary
-//    else
-//        MaterialTheme.colorScheme.onSurfaceVariant
-//
-//    Box(
-//        contentAlignment = Alignment.Center,
-//        modifier = Modifier
-//            .clip(RoundedCornerShape(50))
-//            .background(backgroundColor)
-//            .clickable(onClick = onClick)
-//            .padding(horizontal = 24.dp, vertical = 8.dp)
-//    ) {
-//        Text(
-//            text = text,
-//            color = textColor,
-//            style = MaterialTheme.typography.labelLarge
-//        )
-//    }
-//}
-//
-//@Composable
-//fun LibrarySongItem(song: Song, onSongClick: () -> Unit) {
-//    Row(
-//        verticalAlignment = Alignment.CenterVertically,
-//        modifier = Modifier
-//            .fillMaxWidth()
-//            .clickable(onClick = onSongClick)
-//    ) {
-//        Image(
-//            painter = rememberAsyncImagePainter(model = song.albumArt),
-//            contentDescription = "${song.title} album art",
-//            contentScale = ContentScale.Crop,
-//            modifier = Modifier
-//                .size(56.dp)
-//                .clip(RoundedCornerShape(4.dp))
-//        )
-//
-//        Spacer(modifier = Modifier.width(16.dp))
-//
-//        Column(
-//            modifier = Modifier.weight(1f)
-//        ) {
-//            Text(
-//                text = song.title,
-//                color = MaterialTheme.colorScheme.onBackground,
-//                style = MaterialTheme.typography.bodyLarge,
-//                maxLines = 1,
-//                overflow = TextOverflow.Ellipsis
-//            )
-//
-//            Text(
-//                text = song.artist,
-//                color = MaterialTheme.colorScheme.onSurfaceVariant,
-//                style = MaterialTheme.typography.bodyMedium,
-//                maxLines = 1,
-//                overflow = TextOverflow.Ellipsis
-//            )
+//    private fun navigateToPlayback(songId: String) {
+//        val bundle = Bundle().apply {
+//            putString("songId", songId)
 //        }
+//        navController.navigate(R.id.navigation_song_playback, bundle)
+//    }
+//
+//    private fun navigateToAddSong() {
+//        val bundle = Bundle().apply {
+//            putLong("songId", -1L)
+//        }
+//        navController.navigate(R.id.action_library_to_add_song, bundle)
+//    }
+//
+//    override fun onDestroyView() {
+//        super.onDestroyView()
+//        _binding = null
 //    }
 //}
