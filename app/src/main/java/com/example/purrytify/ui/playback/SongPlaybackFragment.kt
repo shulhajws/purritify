@@ -172,6 +172,10 @@ class SongPlaybackFragment : Fragment() {
             viewModel.playPrevious()
         }
 
+        btnFavorite.setOnClickListener {
+            viewModel.toggleFavorite()
+        }
+
         btnEditSong.setOnClickListener {
             // Debug to check if currentSong is null at click time
             Log.d("SongPlayback", "Edit button clicked, currentSong: ${viewModel.currentSong.value}")
@@ -246,8 +250,20 @@ class SongPlaybackFragment : Fragment() {
                         textTotalTime.text = formatDuration(duration)
                     }
                 }
+
+                launch {
+                    viewModel.isLiked.collectLatest { isLiked ->
+                        updateFavoriteButton(isLiked)
+                    }
+                }
             }
         }
+    }
+
+    private fun updateFavoriteButton(isLiked: Boolean) {
+        btnFavorite.setImageResource(
+            if (isLiked) R.drawable.ic_fav else R.drawable.ic_fav_border
+        )
     }
 
     private fun navigateToEditDeleteSong(songId: String?) {

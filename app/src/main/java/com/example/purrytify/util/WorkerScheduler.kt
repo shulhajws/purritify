@@ -10,7 +10,7 @@ import java.util.concurrent.TimeUnit
 
 fun scheduleTokenVerification(context: Context) {
     // Log for debugging
-    Log.e("TokenScheduler", "Scheduling periodic work")
+    Log.d("TokenScheduler", "Scheduling periodic work")
 
     val workRequest = PeriodicWorkRequestBuilder<TokenVerificationWorker>(
         15, TimeUnit.MINUTES // Use 15 minutes in release (Android production limit is >= 15)

@@ -2,8 +2,10 @@ package com.example.purrytify
 
 import android.content.Intent
 import android.os.Bundle
+import android.util.Log
 import android.view.View
 import android.view.ViewGroup
+import android.widget.Toast
 import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
 import androidx.compose.material3.MaterialTheme
@@ -21,6 +23,8 @@ import com.example.purrytify.databinding.ActivityMainBinding
 import com.example.purrytify.ui.login.LoginActivity
 import com.example.purrytify.ui.playback.MiniPlayer
 import com.example.purrytify.ui.playback.PlayerViewModel
+import com.example.purrytify.ui.shared.SharedViewModel
+import com.example.purrytify.util.NetworkUtil
 import com.example.purrytify.util.TokenManager
 import com.example.purrytify.util.scheduleTokenVerification
 import com.google.android.material.bottomnavigation.BottomNavigationView
@@ -32,6 +36,8 @@ class MainActivity : AppCompatActivity() {
     private lateinit var navController: NavController
     private lateinit var appBarConfiguration: AppBarConfiguration
     private val playerViewModel: PlayerViewModel by viewModels()
+
+    private val sharedViewModel: SharedViewModel by viewModels()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -46,10 +52,21 @@ class MainActivity : AppCompatActivity() {
             finish() // Close MainActivity
         } else {
             // User is logged in, proceed with MainActivity
-            // TODO: fetch user data here if needed
+
+            // Fetch user profile data
+            sharedViewModel.fetchUserProfile(this)
 
             // Call schedulerTokenVerification()
             scheduleTokenVerification(this)
+        }
+
+        // Register network callback
+        NetworkUtil.registerNetworkCallback(this)
+
+        // Check if the network is available
+        if (!NetworkUtil.isNetworkAvailable(this)) {
+            Log.d("MainActivity", "No internet connection")
+            Toast.makeText(this, "No internet connection", Toast.LENGTH_SHORT).show()
         }
 
         // Setup navigation
