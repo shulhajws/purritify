@@ -15,6 +15,7 @@ import kotlinx.coroutines.launch
 
 class HomeViewModel(application: Application) : AndroidViewModel(application) {
     private val repository: SongRepository
+
     private val _newSongs = MutableStateFlow<List<Song>>(emptyList())
     val newSongs: StateFlow<List<Song>> = _newSongs.asStateFlow()
 
@@ -26,18 +27,17 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
         repository = SongRepository(database.songDao())
 
         viewModelScope.launch {
-            repository.allSongs.asFlow().collect { songEntities ->
-                val songs = SongMapper.toSongList(songEntities)
-
-                // TODO: Logic for new and recently played songs
-                val numSongSize = minOf(4, songs.size)
-                _newSongs.value = songs.take(numSongSize)
-                _recentlyPlayedSongs.value = songs.drop(numSongSize)
+            repository.newSongs.asFlow().collect { songEntities ->
+                val songsList = SongMapper.toSongList(songEntities)
+                _newSongs.value = songsList.take(5)
             }
         }
-    }
 
-    fun playSong(songId: String, callback: (String) -> Unit) {
-        callback(songId)
+        viewModelScope.launch {
+            repository.recentlyPlayedSongs.asFlow().collect { songEntities ->
+                val songsList = SongMapper.toSongList(songEntities)
+                _recentlyPlayedSongs.value = songsList.take(5)
+            }
+        }
     }
 }

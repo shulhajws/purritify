@@ -15,6 +15,6 @@ data class SongEntity(
     var artworkPath: String? = null,
     var uploadedAt: Date,
     var lastPlayedAt: Date? = null,
-    val isLiked: Boolean = false,
-    val isListened: Boolean = false
+    var isLiked: Boolean = false,
+    var isListened: Boolean = false
 )
