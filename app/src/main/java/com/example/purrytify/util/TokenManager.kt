@@ -2,11 +2,17 @@ package com.example.purrytify.util
 
 import android.content.Context
 import androidx.security.crypto.EncryptedSharedPreferences
+import android.content.SharedPreferences
 import androidx.security.crypto.MasterKeys
 
 object TokenManager {
     private const val PREFS_NAME = "secure_prefs"
     private const val TOKEN_KEY = "auth_token"
+    private const val REFRESH_TOKEN_KEY = "refresh_token"
+
+    private fun getPrefs(context: Context): SharedPreferences {
+        return context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+    }
 
     fun saveToken(context: Context, token: String) {
         val masterKey = MasterKeys.getOrCreate(MasterKeys.AES256_GCM_SPEC)
@@ -30,6 +36,15 @@ object TokenManager {
             EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM
         )
         return sharedPreferences.getString(TOKEN_KEY, null)
+    }
+
+    fun saveRefreshToken(context: Context, refreshToken: String) {
+        val prefs = getPrefs(context)
+        prefs.edit().putString(REFRESH_TOKEN_KEY, refreshToken).apply()
+    }
+
+    fun getRefreshToken(context: Context): String? {
+        return getPrefs(context).getString(REFRESH_TOKEN_KEY, null)
     }
 
     fun clearToken(context: Context) {
