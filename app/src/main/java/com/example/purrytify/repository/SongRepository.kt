@@ -3,27 +3,36 @@ package com.example.purrytify.repository
 import androidx.lifecycle.LiveData
 import com.example.purrytify.data.dao.SongDao
 import com.example.purrytify.data.entity.SongEntity
+import kotlinx.coroutines.flow.Flow
 import java.util.Date
+
 class SongRepository(private val songDao: SongDao) {
-    val allSongs: LiveData<List<SongEntity>> = songDao.getAllSongs()
-    val likedSongs: LiveData<List<SongEntity>> = songDao.getLikedSongs()
-    val newSongs: LiveData<List<SongEntity>> = songDao.getNewSongs()
-    val recentlyPlayedSongs: LiveData<List<SongEntity>> = songDao.getRecentlyPlayedSongs()
-
-    suspend fun insert(song: SongEntity): Long {
-        return songDao.insert(song)
+    fun getSongsByUserId(userId: Int): LiveData<List<SongEntity>> {
+        return songDao.getSongsByUserId(userId)
     }
 
-    suspend fun update(song: SongEntity) {
-        songDao.update(song)
+    fun getLikedSongsByUserId(userId: Int): LiveData<List<SongEntity>> {
+        return songDao.getLikedSongsByUserId(userId)
     }
 
-    suspend fun delete(song: SongEntity) {
-        songDao.delete(song)
+    fun getNewSongsByUserId(userId: Int): LiveData<List<SongEntity>> {
+        return songDao.getNewSongsByUserId(userId)
     }
 
-    suspend fun getSongById(id: Long): SongEntity? {
-        return songDao.getSongById(id)
+    fun getRecentlyPlayedSongsByUserId(userId: Int): LiveData<List<SongEntity>> {
+        return songDao.getRecentlyPlayedSongsByUserId(userId)
+    }
+
+    fun getSongsCountByUserId(userId: Int): Flow<Int> {
+        return songDao.getSongsCountByUserId(userId)
+    }
+
+    fun getLikedSongsCountByUserId(userId: Int): Flow<Int> {
+        return songDao.getLikedSongsCountByUserId(userId)
+    }
+
+    fun getListenedSongsCountByUserId(userId: Int): Flow<Int> {
+        return songDao.getListenedSongsCountByUserId(userId)
     }
 
     suspend fun toggleLiked(songId: Long, liked: Boolean) {
@@ -41,5 +50,21 @@ class SongRepository(private val songDao: SongDao) {
             it.isListened = true
             songDao.update(it)
         }
+    }
+
+    suspend fun insert(song: SongEntity): Long {
+        return songDao.insert(song)
+    }
+
+    suspend fun update(song: SongEntity) {
+        songDao.update(song)
+    }
+
+    suspend fun delete(song: SongEntity) {
+        songDao.delete(song)
+    }
+
+    suspend fun getSongById(id: Long): SongEntity? {
+        return songDao.getSongById(id)
     }
 }
