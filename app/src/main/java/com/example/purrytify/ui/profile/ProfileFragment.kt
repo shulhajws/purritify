@@ -153,27 +153,31 @@ class ProfileFragment : Fragment() {
                         Log.d("ProfileFragment", "Shulha  debug masuk internet")
                         // Get global user profile from SharedViewModel
                         val userProfile = sharedViewModel.globalUserProfile.collectAsState().value
-                        Log.d("ProfileFragment",  "userProfile: $userProfile")
+                        Log.d("ProfileFragment",  "Debug currentUserProfile: $userProfile")
 
                         val songsCount = profileViewModel.songsCount.collectAsState().value
                         val likedCount = profileViewModel.likedCount.collectAsState().value
                         val listenedCount = profileViewModel.listenedCount.collectAsState().value
                         Log.d("ProfileFragment", "Stats from DB - Songs: $songsCount, Liked: $likedCount, Listened: $listenedCount")
 
-                        // if userProfile null force logout
+                        // If userProfile is null, force logout
                         if (userProfile == null) {
-                            val context = LocalContext.current
                             // Clear the token
-                            TokenManager.clearToken(context)
+                            TokenManager.clearToken(requireContext())
 
                             // Clear globalUserProfile variable
                             sharedViewModel.clearGlobalUserProfile()
 
                             // Navigate to LoginActivity
-                            val intent = Intent(context, LoginActivity::class.java)
-                            context.startActivity(intent)
-                        }
+                            val intent = Intent(requireContext(), LoginActivity::class.java)
+                            startActivity(intent)
 
+                            // Toast message
+                            Toast.makeText(requireContext(), "Session expired. Please log in again.", Toast.LENGTH_SHORT).show()
+
+                            // Finish current activity "if needed"
+                            (requireContext() as? Activity)?.finish()
+                        }
                         userProfile?.let {
                             Log.d("ProfileFragment", "it.username: ${it.username}")
                             ProfileScreen(

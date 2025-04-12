@@ -92,7 +92,7 @@ class MainActivity : AppCompatActivity() {
         navController = navHostFragment.navController
 
         navController.addOnDestinationChangedListener { _, destination, _ ->
-            if (destination.id == R.id.navigation_song_playback) {
+            if (destination.id != R.id.navigation_home && destination.id != R.id.navigation_library && destination.id != R.id.navigation_profile) {
                 binding.miniPlayerContainer.visibility = View.GONE
             } else {
                 if (playerViewModel.currentSong.value != null) {

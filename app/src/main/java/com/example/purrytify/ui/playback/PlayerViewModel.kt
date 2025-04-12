@@ -95,7 +95,9 @@ class PlayerViewModel(application: Application) : AndroidViewModel(application) 
         if (pendingSongRequests.isNotEmpty()) {
             val songId = pendingSongRequests.removeFirst()
             Log.d("PlayerViewModel", "Processing pending request for song ID: $songId")
+
             val song = allSongs.find { it.id == songId }
+
             if (song != null) {
                 Log.d("PlayerViewModel", "Found pending song: ${song.title}")
                 _currentSong.value = song
@@ -105,6 +107,7 @@ class PlayerViewModel(application: Application) : AndroidViewModel(application) 
             }
         }
     }
+
 
     fun getSongById(songId: String): Song? {
         return allSongs.find { it.id == songId }
@@ -122,7 +125,19 @@ class PlayerViewModel(application: Application) : AndroidViewModel(application) 
         val song = allSongs.find { it.id == songId }
         if (song != null) {
             Log.d("PlayerViewModel", "Found song: ${song.title}")
-            _currentSong.value = song  // Set this explicitly before playing
+
+            // Cek jika lagu yang diminta sudah jadi currentSong dan sedang diputar
+            if (_currentSong.value?.id == songId && _isPlaying.value) {
+                Log.d("PlayerViewModel", "Same song is already playing, ignoring request.")
+                return // Tidak lakukan apapun
+            }
+
+            // Kalau lagu beda atau sedang tidak diputar, lanjutkan play
+            if (_currentSong.value?.id != songId) {
+                stopCurrentSong()
+                _currentSong.value = song
+            }
+
             playSong(song)
         } else {
             Log.e("PlayerViewModel", "Song with ID $songId not found")
@@ -263,7 +278,7 @@ class PlayerViewModel(application: Application) : AndroidViewModel(application) 
         _currentPosition.value = position
     }
 
-    fun stopCurrentSong() {
+    private fun stopCurrentSong() {
         mediaPlayer?.apply {
             if (isPlaying) {
                 stop()
@@ -302,6 +317,25 @@ class PlayerViewModel(application: Application) : AndroidViewModel(application) 
             showToast("No song is currently selected")
         }
     }
+//    fun onSongRequest(songId: String) {
+//        if (allSongs.isEmpty()) {
+//            // Lagu belum dimuat → simpan permintaan
+//            pendingSongRequests.add(songId)
+//        } else {
+//            // Lagu sudah tersedia → langsung mainkan
+//            val song = allSongs.find { it.id == songId }
+//            if (song != null) {
+//                _currentSong.value = song
+//                playSong(song)
+//            } else {
+//                Log.e("PlayerViewModel","No song found")
+//            }
+//        }
+//    }
+//    fun onAllSongsLoaded(songs: List<Song>) {
+//        allSongs = songs
+//        processPendingSongRequests()
+//    }
 
     override fun onCleared() {
         super.onCleared()
