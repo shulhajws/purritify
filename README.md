@@ -115,7 +115,7 @@ Pengerjaan 44 jam
 ![Profile Page](screenshot/profile.png)
 
 ### Music Player (Now Playing)
-![Now Playing](screenshot/now_playing.png)
+![Now Playing](screenshot/song_player.png)
 
 ### Add Song
 ![Add Song](screenshot/add_song.png)
