@@ -28,6 +28,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import coil.compose.rememberAsyncImagePainter
@@ -42,7 +43,6 @@ fun HomeScreen(
 ) {
     val newSongs by viewModel.newSongs.collectAsState()
     val recentlyPlayedSongs by viewModel.recentlyPlayedSongs.collectAsState()
-
     Box(
         modifier = Modifier
             .fillMaxSize()
@@ -59,20 +59,22 @@ fun HomeScreen(
                 text = "New songs",
                 color = White,
                 style = MaterialTheme.typography.headlineMedium,
-//                fontSize = 24.sp,
-//                fontWeight = FontWeight.Bold,
                 modifier = Modifier.padding(bottom = 16.dp)
             )
 
-            LazyRow(
-                horizontalArrangement = Arrangement.spacedBy(16.dp),
-                modifier = Modifier.height(180.dp)
-            ) {
-                items(newSongs) { song ->
-                    NewSongItem(
-                        song = song,
-                        onSongClick = { onSongClick(song) }
-                    )
+            if (newSongs.isEmpty()) {
+                EmptyStateMessage(message = "No new songs")
+            } else {
+                LazyRow(
+                    horizontalArrangement = Arrangement.spacedBy(16.dp),
+                    modifier = Modifier.height(180.dp)
+                ) {
+                    items(newSongs) { song ->
+                        NewSongItem(
+                            song = song,
+                            onSongClick = { onSongClick(song) }
+                        )
+                    }
                 }
             }
 
@@ -83,22 +85,41 @@ fun HomeScreen(
                 text = "Recently played",
                 color = White,
                 style = MaterialTheme.typography.headlineMedium,
-//                fontSize = 24.sp,
-//                fontWeight = FontWeight.Bold,
                 modifier = Modifier.padding(bottom = 16.dp)
             )
 
-            Column(
-                verticalArrangement = Arrangement.spacedBy(16.dp)
-            ) {
-                recentlyPlayedSongs.forEach { song ->
-                    RecentlyPlayedItem(
-                        song = song,
-                        onSongClick = { onSongClick(song) }
-                    )
+            if (recentlyPlayedSongs.isEmpty()) {
+                EmptyStateMessage(message = "No recently played songs")
+            } else {
+                Column(
+                    verticalArrangement = Arrangement.spacedBy(16.dp)
+                ) {
+                    recentlyPlayedSongs.forEach { song ->
+                        RecentlyPlayedItem(
+                            song = song,
+                            onSongClick = { onSongClick(song) }
+                        )
+                    }
                 }
             }
         }
+    }
+}
+
+@Composable
+fun EmptyStateMessage(message: String) {
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(100.dp),
+        contentAlignment = Alignment.Center
+    ) {
+        Text(
+            text = message,
+            color = SoftGray,
+            style = MaterialTheme.typography.bodyLarge,
+            textAlign = TextAlign.Center
+        )
     }
 }
 
