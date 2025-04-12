@@ -22,6 +22,7 @@ import com.example.purrytify.ui.login.LoginActivity
 import com.example.purrytify.ui.playback.MiniPlayer
 import com.example.purrytify.ui.playback.PlayerViewModel
 import com.example.purrytify.util.TokenManager
+import com.example.purrytify.util.scheduleTokenVerification
 import com.google.android.material.bottomnavigation.BottomNavigationView
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
@@ -45,7 +46,10 @@ class MainActivity : AppCompatActivity() {
             finish() // Close MainActivity
         } else {
             // User is logged in, proceed with MainActivity
-            // You can also fetch user data here if needed
+            // TODO: fetch user data here if needed
+
+            // Call schedulerTokenVerification()
+            scheduleTokenVerification(this)
         }
 
         // Setup navigation
