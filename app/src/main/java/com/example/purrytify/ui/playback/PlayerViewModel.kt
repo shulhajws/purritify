@@ -57,6 +57,7 @@ class PlayerViewModel(application: Application) : AndroidViewModel(application) 
                         handler.removeCallbacks(this) // stop updating if not playing
                     }
                 } catch (e: Exception) {
+                    Toast.makeText(getApplication(), "Error updating song player's progress", Toast.LENGTH_SHORT).show()
                     Log.e("PlayerViewModel", "Error updating progress: ${e.message}")
                 }
             }
@@ -292,6 +293,7 @@ class PlayerViewModel(application: Application) : AndroidViewModel(application) 
                     }
                 } catch (e: Exception) {
                     Log.e("PlayerViewModel", "Error updating favorite status: ${e.message}")
+                    showToast("Failed to update favorite status")
                     _isLiked.value = !newLikedStatus
                 }
             }

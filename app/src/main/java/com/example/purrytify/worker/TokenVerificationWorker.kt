@@ -33,7 +33,7 @@ class TokenVerificationWorker(
             // No token available, consider logging out the user
             TokenManager.clearToken(context)
             // Show toast message
-            Toast.makeText(context, "Session expired. Please log in again.", Toast.LENGTH_SHORT).show()
+            Toast.makeText(context, "Your session has ended. Please log in again.", Toast.LENGTH_SHORT).show()
             return Result.success()
         }
 
@@ -54,11 +54,12 @@ class TokenVerificationWorker(
                     TokenManager.clearToken(context)
 
                     // Show toast message
-                    Toast.makeText(context, "Session expired. Please log in again.", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(context, "Session is no longer valid. Please log in again.", Toast.LENGTH_SHORT).show()
                 }
             }
         } catch (e: HttpException) {
             e.printStackTrace()
+            Toast.makeText(context, "Oops! Something went wrong while checking your session. Please try again later.", Toast.LENGTH_SHORT).show()
             Log.e("TokenWorker", "Error verifying token: ${e.message()}")
         }
 
@@ -82,6 +83,8 @@ class TokenVerificationWorker(
             }
         } catch (e: HttpException) {
             e.printStackTrace()
+            Toast.makeText(context, "Couldn’t refresh your session. Please sign in again.", Toast.LENGTH_SHORT).show()
+            Log.e("TokenWorker", "Error refreshing token: ${e.message()}")
         }
     }
 }
