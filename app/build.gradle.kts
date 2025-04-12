@@ -54,6 +54,7 @@ android {
 }
 
 dependencies {
+    implementation(libs.androidx.espresso.core)
     // Use Compose BOM to manage versions automatically
 //    implementation(platform("androidx.compose:compose-bom:2024.03.00"))
     val compose_version = "1.6.3"
