@@ -11,6 +11,16 @@
         android:padding="24dp">
 
         <ImageButton
+            android:id="@+id/btn_back"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_alignParentTop="true"
+            android:layout_alignParentStart="true"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:src="@drawable/ic_arrow_back"
+            android:contentDescription="@string/back_button" />
+
+        <ImageButton
             android:id="@+id/btn_edit_delete_song"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"

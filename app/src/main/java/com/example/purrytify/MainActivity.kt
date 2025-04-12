@@ -76,12 +76,16 @@ class MainActivity : AppCompatActivity() {
         navController = navHostFragment.navController
 
         navController.addOnDestinationChangedListener { _, destination, _ ->
-            if (destination.id != R.id.navigation_home && destination.id != R.id.navigation_library && destination.id != R.id.navigation_profile) {
-                binding.miniPlayerContainer.visibility = View.GONE
+            val showMiniPlayer = destination.id == R.id.navigation_home ||
+                    destination.id == R.id.navigation_library ||
+                    destination.id == R.id.navigation_profile
+
+            // Update mini player visibility based on navigation and song state
+            binding.miniPlayerContainer.visibility = if (showMiniPlayer &&
+                playerViewModel.currentSong.value != null) {
+                View.VISIBLE
             } else {
-                if (playerViewModel.currentSong.value != null) {
-                    binding.miniPlayerContainer.visibility = View.VISIBLE
-                }
+                View.GONE
             }
         }
 
