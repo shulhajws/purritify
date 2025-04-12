@@ -11,7 +11,6 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.ui.Modifier
 import com.example.purrytify.MainActivity
-import com.example.purrytify.ui.home.HomeScreen
 import com.example.purrytify.ui.theme.PurrytifyTheme
 
 class LoginActivity : ComponentActivity() {
