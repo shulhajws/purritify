@@ -4,6 +4,7 @@ import android.content.Intent
 import android.os.Bundle
 import android.view.View
 import android.view.ViewGroup
+import android.widget.Toast
 import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
 import androidx.compose.material3.MaterialTheme
@@ -21,6 +22,7 @@ import com.example.purrytify.databinding.ActivityMainBinding
 import com.example.purrytify.ui.login.LoginActivity
 import com.example.purrytify.ui.playback.MiniPlayer
 import com.example.purrytify.ui.playback.PlayerViewModel
+import com.example.purrytify.util.NetworkUtil
 import com.example.purrytify.util.TokenManager
 import com.example.purrytify.util.scheduleTokenVerification
 import com.google.android.material.bottomnavigation.BottomNavigationView
