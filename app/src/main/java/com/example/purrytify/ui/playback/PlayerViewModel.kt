@@ -127,9 +127,18 @@ class PlayerViewModel(application: Application) : AndroidViewModel(application) 
 
     fun playSong(song: Song) {
         stopCurrentSong()
-        _currentSong.value = song  // Make sure this is set before any async operations
+        _currentSong.value = song
         currentIndex = allSongs.indexOfFirst { it.id == song.id }
         Log.d("PlayerViewModel", "Playing song: ${song.title} from ${song.audioUrl}")
+
+        viewModelScope.launch {
+            try {
+                repository.updateLastPlayed(song.id.toLong())
+                Log.d("PlayerViewModel", "Updated lastPlayedAt for song: ${song.title}")
+            } catch (e: Exception) {
+                Log.e("PlayerViewModel", "Error updating lastPlayedAt: ${e.message}")
+            }
+        }
 
         try {
             mediaPlayer = MediaPlayer()
@@ -187,7 +196,7 @@ class PlayerViewModel(application: Application) : AndroidViewModel(application) 
                     setOnCompletionListener {
                         _isPlaying.value = false
                         handler.removeCallbacks(updateProgressRunnable)
-                        playNext() // Auto-play next song when current finishes
+                        playNext()
                     }
                 } catch (e: SecurityException) {
                     Log.e("PlayerViewModel", "Security exception: ${e.message}")

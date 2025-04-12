@@ -43,6 +43,7 @@ class SongPlaybackFragment : Fragment() {
     private lateinit var btnNext: ImageButton
     private lateinit var btnPrev: ImageButton
     private lateinit var btnEditSong: ImageButton
+    private lateinit var btnFavorite: ImageButton
     private lateinit var textCurrentTime: TextView
     private lateinit var textTotalTime: TextView
 
@@ -151,6 +152,7 @@ class SongPlaybackFragment : Fragment() {
         btnNext = view.findViewById(R.id.btn_next)
         btnPrev = view.findViewById(R.id.btn_prev)
         btnEditSong = view.findViewById(R.id.btn_edit_delete_song)
+        btnFavorite = view.findViewById(R.id.btn_favorite)
         textCurrentTime = view.findViewById(R.id.text_current_time)
         textTotalTime = view.findViewById(R.id.text_total_time)
         seekBar = view.findViewById(R.id.seek_bar)
