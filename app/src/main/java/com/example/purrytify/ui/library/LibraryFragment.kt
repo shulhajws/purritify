@@ -1,6 +1,7 @@
 package com.example.purrytify.ui.library
 
 import android.os.Bundle
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -8,14 +9,17 @@ import android.widget.TextView
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.activityViewModels
+import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.lifecycleScope
+import androidx.lifecycle.repeatOnLifecycle
 import androidx.navigation.NavController
 import androidx.navigation.fragment.NavHostFragment
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.example.purrytify.R
 import com.example.purrytify.databinding.FragmentLibraryBinding
 import com.example.purrytify.ui.playback.PlayerViewModel
+import com.example.purrytify.ui.shared.SharedViewModel
 import com.google.android.material.button.MaterialButton
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.flatMapLatest
@@ -28,7 +32,7 @@ class LibraryFragment : Fragment() {
     private lateinit var navController: NavController
     private lateinit var songAdapter: LibrarySongAdapter
     private val playerViewModel: PlayerViewModel by activityViewModels()
-
+    private val sharedViewModel: SharedViewModel by activityViewModels()
     private lateinit var emptyStateTextView: TextView
     private lateinit var recyclerView: androidx.recyclerview.widget.RecyclerView
 
@@ -43,6 +47,22 @@ class LibraryFragment : Fragment() {
         )[LibraryViewModel::class.java]
         _binding = FragmentLibraryBinding.inflate(inflater, container, false)
         binding.fragmentHeaderTitle.text = getString(R.string.title_library)
+
+        viewLifecycleOwner.lifecycleScope.launch {
+            repeatOnLifecycle(Lifecycle.State.STARTED) {
+                sharedViewModel.globalUserProfile.collect { userProfile ->
+                    userProfile?.let { profile ->
+                        try {
+                            val userId = profile.id.toInt()
+                            libraryViewModel.updateForUser(userId)
+                        } catch (e: NumberFormatException) {
+                            Log.e("LibraryFragment", "Invalid user ID format: ${profile.id}")
+                        }
+                    }
+                }
+            }
+        }
+
         return binding.root
     }
 

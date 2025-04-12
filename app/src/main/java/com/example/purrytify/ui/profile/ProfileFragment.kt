@@ -3,6 +3,7 @@ package com.example.purrytify.ui.profile
 import android.app.Activity
 import android.content.Intent
 import android.os.Bundle
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -28,7 +29,10 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.fragment.app.Fragment
+import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.ViewModelProvider
+import androidx.lifecycle.lifecycleScope
+import androidx.lifecycle.repeatOnLifecycle
 import com.example.purrytify.R
 import com.example.purrytify.databinding.FragmentProfileBinding
 import com.example.purrytify.ui.login.LoginActivity
@@ -37,6 +41,7 @@ import com.example.purrytify.ui.theme.PurrytifyTheme
 import com.example.purrytify.ui.theme.White
 import com.example.purrytify.util.NetworkUtil
 import com.example.purrytify.util.TokenManager
+import kotlinx.coroutines.launch
 
 class ProfileFragment : Fragment() {
     private var _binding: FragmentProfileBinding? = null
@@ -47,7 +52,7 @@ class ProfileFragment : Fragment() {
         ViewModelProvider(requireActivity())[SharedViewModel::class.java]
     }
 
-    override fun onCreateView(  // TODO: Potentially unused
+    override fun onCreateView(
         inflater: LayoutInflater,
         container: ViewGroup?,
         savedInstanceState: Bundle?
@@ -60,6 +65,22 @@ class ProfileFragment : Fragment() {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
+
+        viewLifecycleOwner.lifecycleScope.launch {
+            viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
+                sharedViewModel.globalUserProfile.collect { userProfile ->
+                    userProfile?.let { profile ->
+                        try {
+                            val userId = profile.id.toInt()
+                            Log.d("ProfileFragment", "Updating profileViewModel with userId: $userId")
+                            profileViewModel.updateForUser(userId)
+                        } catch (e: NumberFormatException) {
+                            Log.e("ProfileFragment", "Invalid user ID format: ${profile.id}")
+                        }
+                    }
+                }
+            }
+        }
 
         binding.profileComposeView.setContent {
             PurrytifyTheme {
@@ -129,8 +150,15 @@ class ProfileFragment : Fragment() {
                             }
                         }
                     } else {
+                        Log.d("ProfileFragment", "Shulha  debug masuk internet")
                         // Get global user profile from SharedViewModel
                         val userProfile = sharedViewModel.globalUserProfile.collectAsState().value
+                        Log.d("ProfileFragment",  "Debug currentUserProfile: $userProfile")
+
+                        val songsCount = profileViewModel.songsCount.collectAsState().value
+                        val likedCount = profileViewModel.likedCount.collectAsState().value
+                        val listenedCount = profileViewModel.listenedCount.collectAsState().value
+                        Log.d("ProfileFragment", "Stats from DB - Songs: $songsCount, Liked: $likedCount, Listened: $listenedCount")
 
                         // If userProfile is null, force logout
                         if (userProfile == null) {
@@ -151,7 +179,13 @@ class ProfileFragment : Fragment() {
                             (requireContext() as? Activity)?.finish()
                         }
                         userProfile?.let {
-                            ProfileScreen(userProfile = it)
+                            Log.d("ProfileFragment", "it.username: ${it.username}")
+                            ProfileScreen(
+                                userProfile = it,
+                                songsCount = songsCount,
+                                likedCount = likedCount,
+                                listenedCount = listenedCount
+                            )
                         }
                     }
                 }

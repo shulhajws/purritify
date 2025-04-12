@@ -14,7 +14,9 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.ComposeView
 import androidx.core.os.bundleOf
+import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
+import androidx.lifecycle.repeatOnLifecycle
 import androidx.navigation.NavController
 import androidx.navigation.fragment.NavHostFragment
 import androidx.navigation.ui.AppBarConfiguration
@@ -36,7 +38,6 @@ class MainActivity : AppCompatActivity() {
     private lateinit var navController: NavController
     private lateinit var appBarConfiguration: AppBarConfiguration
     private val playerViewModel: PlayerViewModel by viewModels()
-
     private val sharedViewModel: SharedViewModel by viewModels()
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -58,6 +59,21 @@ class MainActivity : AppCompatActivity() {
 
             // Call schedulerTokenVerification()
             scheduleTokenVerification(this)
+
+            lifecycleScope.launch {
+                repeatOnLifecycle(Lifecycle.State.STARTED) {
+                    sharedViewModel.globalUserProfile.collect { userProfile ->
+                        userProfile?.let { profile ->
+                            try {
+                                val userId = profile.id.toInt()
+                                playerViewModel.updateForUser(userId)
+                            } catch (e: NumberFormatException) {
+                                Log.e("MainActivity", "Invalid user ID format: ${profile.id}")
+                            }
+                        }
+                    }
+                }
+            }
         }
 
         // Register network callback
@@ -98,7 +114,6 @@ class MainActivity : AppCompatActivity() {
         )
         navView.setupWithNavController(navController)
 
-        // ComposeView setup
         val composeView = ComposeView(this).apply {
             layoutParams = ViewGroup.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT,

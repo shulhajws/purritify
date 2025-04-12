@@ -40,13 +40,12 @@ import com.example.purrytify.ui.theme.White
 import com.example.purrytify.util.TokenManager
 
 @Composable
-fun ProfileScreen(userProfile: UserProfile) {
-//    val userProfile by viewModel.userProfile.collectAsState()
-//    val songsCount by viewModel.songsCount.collectAsState()
-//    val likedCount by viewModel.likedCount.collectAsState()
-//    val listenedCount by viewModel.listenedCount.collectAsState()
-
-//    val buttonColor = DarkGray    // Uncomment this line to use DarkGray
+fun ProfileScreen(
+    userProfile: UserProfile,
+    songsCount: Int = 0,
+    likedCount: Int = 0,
+    listenedCount: Int = 0
+) {
     val textColor = White
     val secondaryTextColor = SoftGray
     val topColor = Color(0xFF00667B)
@@ -86,7 +85,6 @@ fun ProfileScreen(userProfile: UserProfile) {
             Spacer(modifier = Modifier.height(16.dp))
 
             // Display all of the information that UserProfile had
-
             // Username
             Text(
                 text = userProfile.username,
@@ -107,6 +105,7 @@ fun ProfileScreen(userProfile: UserProfile) {
                 style = MaterialTheme.typography.bodyMedium,
                 color = secondaryTextColor
             )
+
             Spacer(modifier = Modifier.height(8.dp))
 
             // Created At
@@ -131,14 +130,11 @@ fun ProfileScreen(userProfile: UserProfile) {
                 onClick = {
                     // Clear the token
                     TokenManager.clearToken(context)
-
                     // Navigate to LoginActivity
                     val intent = Intent(context, LoginActivity::class.java)
                     context.startActivity(intent)
-
                     // Toast message
                     Toast.makeText(context, "Logged out successfully", Toast.LENGTH_SHORT).show()
-
                     // Finish current activity "if needed"
                     (context as? Activity)?.finish()
                 },
@@ -159,26 +155,26 @@ fun ProfileScreen(userProfile: UserProfile) {
 
             Spacer(modifier = Modifier.height(48.dp))
 
-            // Stats Row
+            // Stats Row - Now using real data from database
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceEvenly
             ) {
                 // Songs Count
                 StatItem(
-                    count = 135, // TODO: Replace with songsCount by access database
+                    count = songsCount,
                     label = "SONGS"
                 )
 
                 // Liked Count
                 StatItem(
-                    count = 135, // TODO: Replace with likedCount by access database
+                    count = likedCount,
                     label = "LIKED"
                 )
 
                 // Listened Count
                 StatItem(
-                    count = 135, // TODO: Replace with listenedCount by access database
+                    count = listenedCount,
                     label = "LISTENED"
                 )
             }

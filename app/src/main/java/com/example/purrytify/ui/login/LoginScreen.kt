@@ -38,7 +38,11 @@ fun LoginScreen(onLogin: (String, String) -> Unit) {
             .padding(24.dp),
         verticalArrangement = Arrangement.Center
     ) {
-        Text("Login", style = MaterialTheme.typography.headlineMedium, color = Color.White)
+        Text(
+            "Login",
+            style = MaterialTheme.typography.headlineMedium,
+            color = Color.White,
+        )
 
         OutlinedTextField(
             value = email,
