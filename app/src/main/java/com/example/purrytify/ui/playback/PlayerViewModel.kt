@@ -35,6 +35,9 @@ class PlayerViewModel(application: Application) : AndroidViewModel(application) 
     private val _isPlaying = MutableStateFlow(false)
     val isPlaying: StateFlow<Boolean> = _isPlaying
 
+    private val _isLiked = MutableStateFlow(false)
+    val isLiked: StateFlow<Boolean> = _isLiked
+
     private val _currentPosition = MutableStateFlow(0)
     val currentPosition: StateFlow<Int> = _currentPosition
 
@@ -128,6 +131,7 @@ class PlayerViewModel(application: Application) : AndroidViewModel(application) 
     fun playSong(song: Song) {
         stopCurrentSong()
         _currentSong.value = song
+        _isLiked.value = song.isLiked
         currentIndex = allSongs.indexOfFirst { it.id == song.id }
         Log.d("PlayerViewModel", "Playing song: ${song.title} from ${song.audioUrl}")
 
@@ -268,6 +272,34 @@ class PlayerViewModel(application: Application) : AndroidViewModel(application) 
         mediaPlayer = null
         _isPlaying.value = false
         handler.removeCallbacks(updateProgressRunnable)
+    }
+
+    fun toggleFavorite() {
+        _currentSong.value?.let { song ->
+            val newLikedStatus = !_isLiked.value
+            _isLiked.value = newLikedStatus
+
+            viewModelScope.launch {
+                try {
+                    repository.toggleLiked(song.id.toLong(), newLikedStatus)
+                    Log.d("PlayerViewModel", "Updated favorite status for song: ${song.title} to $newLikedStatus")
+
+                    val updatedSongs = allSongs.toMutableList()
+                    val index = updatedSongs.indexOfFirst { it.id == song.id }
+                    if (index != -1) {
+                        updatedSongs[index] = updatedSongs[index].copy(isLiked = newLikedStatus)
+                        allSongs = updatedSongs
+                        _currentSong.value = _currentSong.value?.copy(isLiked = newLikedStatus)
+                    }
+                } catch (e: Exception) {
+                    Log.e("PlayerViewModel", "Error updating favorite status: ${e.message}")
+                    _isLiked.value = !newLikedStatus
+                }
+            }
+        } ?: run {
+            Log.e("PlayerViewModel", "Cannot toggle favorite: No current song")
+            showToast("No song is currently selected")
+        }
     }
 
     override fun onCleared() {
