@@ -17,7 +17,6 @@ import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -25,16 +24,14 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.ViewModelProvider
-import androidx.lifecycle.lifecycleScope
-import com.example.purrytify.ui.shared.SharedViewModel
 import com.example.purrytify.R
 import com.example.purrytify.databinding.FragmentProfileBinding
 import com.example.purrytify.ui.login.LoginActivity
+import com.example.purrytify.ui.shared.SharedViewModel
 import com.example.purrytify.ui.theme.PurrytifyTheme
 import com.example.purrytify.ui.theme.White
 import com.example.purrytify.util.NetworkUtil
 import com.example.purrytify.util.TokenManager
-import kotlinx.coroutines.flow.collectLatest
 
 class ProfileFragment : Fragment() {
     private var _binding: FragmentProfileBinding? = null
