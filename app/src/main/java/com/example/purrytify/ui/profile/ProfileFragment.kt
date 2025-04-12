@@ -3,7 +3,6 @@ package com.example.purrytify.ui.profile
 import android.app.Activity
 import android.content.Intent
 import android.os.Bundle
-import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -68,7 +67,8 @@ class ProfileFragment : Fragment() {
                     modifier = Modifier.fillMaxSize(),
                     color = MaterialTheme.colorScheme.background
                 ) {
-                    if (!NetworkUtil.isNetworkAvailable(requireContext())) {
+                    // Note: If you see warning down here, just ignore it, Android Studio have wrong logic this time
+                    if (!NetworkUtil.isNetworkAvailable(requireContext()) && (sharedViewModel.globalUserProfile == null)) {
                         Column(
                             modifier = Modifier
                                 .fillMaxSize()
@@ -77,7 +77,7 @@ class ProfileFragment : Fragment() {
                             horizontalAlignment = Alignment.CenterHorizontally
                         ) {
                             Text(
-                                text = "Tidak ada koneksi internet 😕",
+                                text = "No internet connection 😕",
                                 style = MaterialTheme.typography.headlineSmall,
                                 color = MaterialTheme.colorScheme.onBackground
                             )
@@ -85,7 +85,7 @@ class ProfileFragment : Fragment() {
                             Spacer(modifier = Modifier.height(16.dp))
 
                             Text(
-                                text = "Kamu tidak dapat memuat data profil saat ini.\nSilakan cek koneksi internetmu atau logout untuk masuk kembali.",
+                                text = "You can still use the app, but some features may not work properly.",
                                 style = MaterialTheme.typography.bodyMedium,
                                 color = MaterialTheme.colorScheme.onBackground,
                                 textAlign = TextAlign.Center
@@ -99,6 +99,9 @@ class ProfileFragment : Fragment() {
                                 onClick = {
                                     // Clear the token
                                     TokenManager.clearToken(context)
+
+                                    // Clear globalUserProfile variable
+                                    sharedViewModel.clearGlobalUserProfile()
 
                                     // Navigate to LoginActivity
                                     val intent = Intent(context, LoginActivity::class.java)

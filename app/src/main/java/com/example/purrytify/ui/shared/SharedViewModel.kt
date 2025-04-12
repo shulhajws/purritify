@@ -15,8 +15,8 @@ import kotlinx.coroutines.launch
 
 class SharedViewModel : ViewModel() {
     // TODO: Add other variable if globally needed
-    private val _userProfile = MutableStateFlow<UserProfile?>(null)
-    val globalUserProfile: StateFlow<UserProfile?> = _userProfile
+    private val _globalUserProfile = MutableStateFlow<UserProfile?>(null)
+    val globalUserProfile: StateFlow<UserProfile?> = _globalUserProfile
 
     fun fetchUserProfile(context: Context) {
         val token = TokenManager.getToken(context)
@@ -25,7 +25,7 @@ class SharedViewModel : ViewModel() {
         viewModelScope.launch {
             try {
                 val response = RetrofitClient.instance.getProfile("Bearer $token")
-                _userProfile.value = UserProfile(
+                _globalUserProfile.value = UserProfile(
                     id = response.id,
                     username = response.username,
                     email = response.email,
@@ -39,5 +39,9 @@ class SharedViewModel : ViewModel() {
                 Log.e("SharedViewModel", "Error fetching user profile: ${e.message}")
             }
         }
+    }
+
+    fun clearGlobalUserProfile() {
+        _globalUserProfile.value = null
     }
 }
