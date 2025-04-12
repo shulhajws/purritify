@@ -21,16 +21,19 @@ class TokenVerificationWorker(
         // Log the current time for debugging (Format waktu menjadi string yang lebih mudah dibaca
         val dateFormat = SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault())
         val currentTime = dateFormat.format(Date(System.currentTimeMillis()))
-        Log.e("TokenWorker", "Running token verification at $currentTime")
+        Log.d("TokenWorker", "Running token verification at $currentTime")
 
         val context = applicationContext
         val token = TokenManager.getToken(context)
 
         // Log the token for debugging
-        Log.e("TokenWorker", "Debug current token: $token")
+        Log.d("TokenWorker", "Debug current token: $token")
 
         if (token.isNullOrEmpty()) {
             // No token available, consider logging out the user
+            TokenManager.clearToken(context)
+            // Show toast message
+            Toast.makeText(context, "Session expired. Please log in again.", Toast.LENGTH_SHORT).show()
             return Result.success()
         }
 
