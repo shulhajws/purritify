@@ -46,6 +46,9 @@ class TokenVerificationWorker(
                 val refreshToken = TokenManager.getRefreshToken(context)
                 if (!refreshToken.isNullOrEmpty()) {
                     refreshJwtToken(refreshToken, context)
+                    Log.d("TokenWorker", "Token refreshed successfully")
+
+                    // TODO: Re-fetch the user profile or any other necessary data (?)
                 } else {
                     // Logout the user if no refresh token is available
                     TokenManager.clearToken(context)
@@ -56,6 +59,7 @@ class TokenVerificationWorker(
             }
         } catch (e: HttpException) {
             e.printStackTrace()
+            Log.e("TokenWorker", "Error verifying token: ${e.message()}")
         }
 
         return Result.success()

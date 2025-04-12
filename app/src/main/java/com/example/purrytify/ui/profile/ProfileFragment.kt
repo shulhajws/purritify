@@ -1,6 +1,7 @@
 package com.example.purrytify.ui.profile
 
 import android.os.Bundle
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -41,6 +42,7 @@ class ProfileFragment : Fragment() {
                     color = MaterialTheme.colorScheme.background
                 ) {
                     if (!NetworkUtil.isNetworkAvailable(requireContext())) {
+                        Log.d("ProfileFragment", "No internet connection")
                         NetworkUtil.NoInternetScreen()
                     } else {
                         // Fetch user profile data if network is available

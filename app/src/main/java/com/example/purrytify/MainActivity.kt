@@ -2,6 +2,7 @@ package com.example.purrytify
 
 import android.content.Intent
 import android.os.Bundle
+import android.util.Log
 import android.view.View
 import android.view.ViewGroup
 import android.widget.Toast
@@ -59,6 +60,7 @@ class MainActivity : AppCompatActivity() {
 
         // Check if the network is available
         if (!NetworkUtil.isNetworkAvailable(this)) {
+            Log.d("MainActivity", "No internet connection")
             Toast.makeText(this, "No internet connection", Toast.LENGTH_SHORT).show()
         }
 

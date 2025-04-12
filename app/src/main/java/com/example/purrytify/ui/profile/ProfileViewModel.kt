@@ -1,6 +1,7 @@
 package com.example.purrytify.ui.profile
 
 import android.content.Context
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.purrytify.model.UserProfile
@@ -56,10 +57,12 @@ class ProfileViewModel : ViewModel() {
         // Prevent server request if no internet
         if (!NetworkUtil.isNetworkAvailable(context)) {
             // Handle no internet case
+            Log.d("ProfileViewModel", "No internet connection")
             return
         }
 
         val token = TokenManager.getToken(context)
+        Log.d("ProfileViewModel", "Fetching user profile with token: $token")
         if (token.isNullOrEmpty()) return
 
         viewModelScope.launch {
