@@ -52,6 +52,14 @@ class MainActivity : AppCompatActivity() {
             scheduleTokenVerification(this)
         }
 
+        // Register network callback
+        NetworkUtil.registerNetworkCallback(this)
+
+        // Check if the network is available
+        if (!NetworkUtil.isNetworkAvailable(this)) {
+            Toast.makeText(this, "No internet connection", Toast.LENGTH_SHORT).show()
+        }
+
         // Setup navigation
         val navView: BottomNavigationView = binding.navView
         val navHostFragment = supportFragmentManager
