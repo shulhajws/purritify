@@ -26,14 +26,17 @@ import android.os.Build
 import android.util.Log
 import android.widget.Toast
 import androidx.core.content.ContextCompat
+import androidx.fragment.app.activityViewModels
 import androidx.navigation.NavController
 import androidx.navigation.fragment.NavHostFragment
+import com.example.purrytify.ui.shared.SharedViewModel
 
 class SongPlaybackFragment : Fragment() {
     private lateinit var navController: NavController
     private lateinit var seekBar: SeekBar
     private lateinit var handler: Handler
     private lateinit var viewModel: PlayerViewModel
+    private val sharedViewModel: SharedViewModel by activityViewModels()
 
     // UI Components
     private lateinit var imageAlbum: ImageView
@@ -53,9 +56,25 @@ class SongPlaybackFragment : Fragment() {
         savedInstanceState: Bundle?
     ): View? {
         viewModel = ViewModelProvider(
-            this,
+            requireActivity(),
             ViewModelProvider.AndroidViewModelFactory.getInstance(requireActivity().application)
         )[PlayerViewModel::class.java]
+
+        viewLifecycleOwner.lifecycleScope.launch {
+            repeatOnLifecycle(Lifecycle.State.STARTED) {
+                sharedViewModel.globalUserProfile.collect { userProfile ->
+                    userProfile?.let { profile ->
+                        try {
+                            val userId = profile.id.toInt()
+                            viewModel.updateForUser(userId)
+                        } catch (e: NumberFormatException) {
+                            Log.e("SongPlaybackFragment", "Invalid user ID format: ${profile.id}")
+                        }
+                    }
+                }
+            }
+        }
+
         return inflater.inflate(R.layout.fragment_song_playback, container, false)
     }
 

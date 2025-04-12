@@ -38,14 +38,19 @@ data class AddSongState(
 )
 
 class AddSongViewModel(application: Application) : AndroidViewModel(application) {
-
     private val repository: SongRepository
     private val _state = MutableStateFlow(AddSongState())
     val state: StateFlow<AddSongState> = _state.asStateFlow()
 
+    private var currentUserId: Int? = null
+
     init {
         val songDao = AppDatabase.getDatabase(application).songDao()
         repository = SongRepository(songDao)
+    }
+
+    fun updateCurrentUserId(userId: Int) {
+        currentUserId = userId
     }
 
     fun loadSongData(songId: Long) {
@@ -137,13 +142,18 @@ class AddSongViewModel(application: Application) : AndroidViewModel(application)
             return
         }
 
+        if (currentUserId == null) {
+            _state.update { it.copy(error = "User not logged in") }
+            return
+        }
+
         _state.update { it.copy(isLoading = true) }
 
         viewModelScope.launch {
             try {
                 val song = SongEntity(
                     id = if (currentState.editMode) currentState.songId else 0,
-                    userId = 0, //TODO: Set proper userId
+                    userId = currentUserId!!,
                     title = currentState.title,
                     artist = currentState.artist,
                     duration = currentState.songDuration,

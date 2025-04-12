@@ -43,19 +43,19 @@ class TokenVerificationWorker(
 
             if (!response.isSuccessful && response.code() == 403) {
                 // Token expired, handle re-login or refresh token
-                val refreshToken = TokenManager.getRefreshToken(context)
-                if (!refreshToken.isNullOrEmpty()) {
-                    refreshJwtToken(refreshToken, context)
-                    Log.d("TokenWorker", "Token refreshed successfully")
-
-                    // TODO: Re-fetch the user profile or any other necessary data (?)
-                } else {
+//                val refreshToken = TokenManager.getRefreshToken(context)
+//                if (!refreshToken.isNullOrEmpty()) {
+//                    refreshJwtToken(refreshToken, context)
+//                    Log.d("TokenWorker", "Token refreshed successfully")
+//
+//                    // TODO: Re-fetch the user profile or any other necessary data (?)
+//                } else {
                     // Logout the user if no refresh token is available
                     TokenManager.clearToken(context)
 
                     // Show toast message
                     Toast.makeText(context, "Session is no longer valid. Please log in again.", Toast.LENGTH_SHORT).show()
-                }
+//                }
             }
         } catch (e: HttpException) {
             e.printStackTrace()

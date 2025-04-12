@@ -44,6 +44,8 @@ class PlayerViewModel(application: Application) : AndroidViewModel(application) 
     private val _duration = MutableStateFlow(0)
     val duration: StateFlow<Int> = _duration
 
+    private var currentUserId: Int? = null
+
     private var mediaPlayer: MediaPlayer? = null
     private val handler = Handler(Looper.getMainLooper())
     private val updateProgressRunnable = object : Runnable {
@@ -54,10 +56,9 @@ class PlayerViewModel(application: Application) : AndroidViewModel(application) 
                         _currentPosition.value = it.currentPosition
                         handler.postDelayed(this, 100)
                     } else {
-                        handler.removeCallbacks(this) // stop updating if not playing
+                        handler.removeCallbacks(this)
                     }
                 } catch (e: Exception) {
-                    Toast.makeText(getApplication(), "Error updating song player's progress", Toast.LENGTH_SHORT).show()
                     Log.e("PlayerViewModel", "Error updating progress: ${e.message}")
                 }
             }
@@ -70,20 +71,21 @@ class PlayerViewModel(application: Application) : AndroidViewModel(application) 
     init {
         val database = AppDatabase.getDatabase(application)
         repository = SongRepository(database.songDao())
+        _isLoading.value = true
+    }
 
+    fun updateForUser(userId: Int) {
+        if (currentUserId == userId && allSongs.isNotEmpty()) return // Avoid unnecessary updates
+        currentUserId = userId
         _isLoading.value = true
 
-        // Convert LiveData to Flow and observe
-        repository.allSongs.observeForever { songEntities ->
-            viewModelScope.launch {
+        viewModelScope.launch {
+            // Use the user-specific method from repository
+            repository.getSongsByUserId(userId).asFlow().collect { songEntities ->
                 allSongs = SongMapper.toSongList(songEntities)
-                Log.d("PlayerViewModel", "Songs updated: ${allSongs.size} songs")
-
-                // If this is the first load, handle any pending requests
-                if (_isLoading.value) {
-                    _isLoading.value = false
-                    processPendingSongRequests()
-                }
+                Log.d("PlayerViewModel", "Songs updated for user $userId: ${allSongs.size} songs")
+                _isLoading.value = false
+                processPendingSongRequests()
             }
         }
     }
@@ -96,7 +98,7 @@ class PlayerViewModel(application: Application) : AndroidViewModel(application) 
             val song = allSongs.find { it.id == songId }
             if (song != null) {
                 Log.d("PlayerViewModel", "Found pending song: ${song.title}")
-                _currentSong.value = song  // Set this explicitly before playing
+                _currentSong.value = song
                 playSong(song)
             } else {
                 Log.e("PlayerViewModel", "Pending song with ID $songId not found")
@@ -112,13 +114,11 @@ class PlayerViewModel(application: Application) : AndroidViewModel(application) 
         Log.d("PlayerViewModel", "playSongById called with ID: $songId")
 
         if (_isLoading.value) {
-            // If still loading, queue this request to be processed when loading completes
             Log.d("PlayerViewModel", "Songs still loading, queueing request for later")
             pendingSongRequests.add(songId)
             return
         }
 
-        // Songs are loaded, try to find and play immediately
         val song = allSongs.find { it.id == songId }
         if (song != null) {
             Log.d("PlayerViewModel", "Found song: ${song.title}")
@@ -294,7 +294,6 @@ class PlayerViewModel(application: Application) : AndroidViewModel(application) 
                     }
                 } catch (e: Exception) {
                     Log.e("PlayerViewModel", "Error updating favorite status: ${e.message}")
-                    showToast("Failed to update favorite status")
                     _isLiked.value = !newLikedStatus
                 }
             }
