@@ -53,34 +53,34 @@ class ProfileViewModel : ViewModel() {
         _listenedCount.value = 50
     }
 
-    fun fetchUserProfile(context: Context) {
-        // Prevent server request if no internet
-        if (!NetworkUtil.isNetworkAvailable(context)) {
-            // Handle no internet case
-            Log.d("ProfileViewModel", "No internet connection")
-            return
-        }
-
-        val token = TokenManager.getToken(context)
-        Log.d("ProfileViewModel", "Fetching user profile with token: $token")
-        if (token.isNullOrEmpty()) return
-
-        viewModelScope.launch {
-            try {
-                val response = RetrofitClient.instance.getProfile("Bearer $token")
-                _userProfile.value = UserProfile(
-                    id = response.id,
-                    username = response.username,
-                    email = response.email,
-                    profilePhoto = "${RetrofitClient.getBaseUrl()}/uploads/profile-picture/${response.profilePhoto}",
-                    location = response.location,
-                    createdAt = response.createdAt,
-                    updatedAt = response.updatedAt
-                )
-            } catch (e: Exception) {
-                e.printStackTrace()
-            }
-        }
-    }
+//    fun fetchUserProfile(context: Context) {
+//        // Prevent server request if no internet
+//        if (!NetworkUtil.isNetworkAvailable(context)) {
+//            // Handle no internet case
+//            Log.d("ProfileViewModel", "No internet connection")
+//            return
+//        }
+//
+//        val token = TokenManager.getToken(context)
+//        Log.d("ProfileViewModel", "Fetching user profile with token: $token")
+//        if (token.isNullOrEmpty()) return
+//
+//        viewModelScope.launch {
+//            try {
+//                val response = RetrofitClient.instance.getProfile("Bearer $token")
+//                _userProfile.value = UserProfile(
+//                    id = response.id,
+//                    username = response.username,
+//                    email = response.email,
+//                    profilePhoto = "${RetrofitClient.getBaseUrl()}/uploads/profile-picture/${response.profilePhoto}",
+//                    location = response.location,
+//                    createdAt = response.createdAt,
+//                    updatedAt = response.updatedAt
+//                )
+//            } catch (e: Exception) {
+//                e.printStackTrace()
+//            }
+//        }
+//    }
 }
 
