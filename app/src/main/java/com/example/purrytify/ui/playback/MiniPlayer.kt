@@ -39,6 +39,17 @@ fun MiniPlayer(
             .padding(8.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
+        Image(
+            painter = if (song.albumArt.isNotEmpty())
+                rememberAsyncImagePainter(song.albumArt)
+            else
+                painterResource(id = R.drawable.placeholder_album_art),
+            contentDescription = "Album Art",
+            modifier = Modifier
+                .size(44.dp)
+                .clip(RoundedCornerShape(8.dp)),
+            contentScale = ContentScale.Crop
+        )
         Column(
             modifier = Modifier
                 .weight(1f)
