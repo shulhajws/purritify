@@ -53,7 +53,7 @@ class SongPlaybackFragment : Fragment() {
         savedInstanceState: Bundle?
     ): View? {
         viewModel = ViewModelProvider(
-            this,
+            requireActivity(),
             ViewModelProvider.AndroidViewModelFactory.getInstance(requireActivity().application)
         )[PlayerViewModel::class.java]
         return inflater.inflate(R.layout.fragment_song_playback, container, false)

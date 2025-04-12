@@ -117,7 +117,6 @@ class PlayerViewModel(application: Application) : AndroidViewModel(application) 
             return
         }
 
-        // Songs are loaded, try to find and play immediately
         val song = allSongs.find { it.id == songId }
         if (song != null) {
             Log.d("PlayerViewModel", "Found song: ${song.title}")
