@@ -4,6 +4,7 @@ import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.TextView
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.activityViewModels
@@ -27,6 +28,9 @@ class LibraryFragment : Fragment() {
     private lateinit var navController: NavController
     private lateinit var songAdapter: LibrarySongAdapter
     private val playerViewModel: PlayerViewModel by activityViewModels()
+
+    private lateinit var emptyStateTextView: TextView
+    private lateinit var recyclerView: androidx.recyclerview.widget.RecyclerView
 
     override fun onCreateView(
         inflater: LayoutInflater,
@@ -58,8 +62,10 @@ class LibraryFragment : Fragment() {
         (binding.root as ViewGroup).addView(contentView,
             binding.root.indexOfChild(binding.fragmentHeaderTitle) + 1)
 
+
         // Setup the RecyclerView
-        val recyclerView = contentView.findViewById<androidx.recyclerview.widget.RecyclerView>(R.id.recycler_songs)
+        recyclerView = contentView.findViewById<androidx.recyclerview.widget.RecyclerView>(R.id.recycler_songs)
+        emptyStateTextView = contentView.findViewById(R.id.text_empty_state)
         songAdapter = LibrarySongAdapter { song ->
             playerViewModel.playSong(song)
             navigateToPlayback(song.id)
@@ -97,6 +103,20 @@ class LibraryFragment : Fragment() {
                 }
                 .collect { songs ->
                     songAdapter.submitList(songs)
+
+                    if (songs.isEmpty()) {
+                        val emptyMessage = if (libraryViewModel.selectedTab.value == 0) {
+                            "No songs in library"
+                        } else {
+                            "No liked songs"
+                        }
+                        emptyStateTextView.text = emptyMessage
+                        emptyStateTextView.visibility = View.VISIBLE
+                        recyclerView.visibility = View.GONE
+                    } else {
+                        emptyStateTextView.visibility = View.GONE
+                        recyclerView.visibility = View.VISIBLE
+                    }
                 }
         }
 

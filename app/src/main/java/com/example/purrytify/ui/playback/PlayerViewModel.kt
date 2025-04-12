@@ -26,11 +26,17 @@ class PlayerViewModel(application: Application) : AndroidViewModel(application) 
     private var allSongs: List<Song> = emptyList()
     private var currentIndex = 0
 
+    private val _isLoading = MutableStateFlow(true)
+    val isLoading: StateFlow<Boolean> = _isLoading
+
     private val _currentSong = MutableStateFlow<Song?>(null)
     val currentSong: StateFlow<Song?> = _currentSong
 
     private val _isPlaying = MutableStateFlow(false)
     val isPlaying: StateFlow<Boolean> = _isPlaying
+
+    private val _isLiked = MutableStateFlow(false)
+    val isLiked: StateFlow<Boolean> = _isLiked
 
     private val _currentPosition = MutableStateFlow(0)
     val currentPosition: StateFlow<Int> = _currentPosition
@@ -40,7 +46,6 @@ class PlayerViewModel(application: Application) : AndroidViewModel(application) 
 
     private var mediaPlayer: MediaPlayer? = null
     private val handler = Handler(Looper.getMainLooper())
-
     private val updateProgressRunnable = object : Runnable {
         override fun run() {
             mediaPlayer?.let {
@@ -56,31 +61,88 @@ class PlayerViewModel(application: Application) : AndroidViewModel(application) 
                 }
             }
         }
-
     }
+
+    // Queue for pending song ID requests
+    private val pendingSongRequests = ArrayDeque<String>()
 
     init {
         val database = AppDatabase.getDatabase(application)
         repository = SongRepository(database.songDao())
 
-        viewModelScope.launch {
-            repository.allSongs.asFlow().collect { songEntities ->
+        _isLoading.value = true
+
+        // Convert LiveData to Flow and observe
+        repository.allSongs.observeForever { songEntities ->
+            viewModelScope.launch {
                 allSongs = SongMapper.toSongList(songEntities)
-                Log.d("PlayerViewModel", "Loaded ${allSongs.size} songs from database")
+                Log.d("PlayerViewModel", "Songs updated: ${allSongs.size} songs")
+
+                // If this is the first load, handle any pending requests
+                if (_isLoading.value) {
+                    _isLoading.value = false
+                    processPendingSongRequests()
+                }
             }
         }
     }
 
-    // Add this method to your PlayerViewModel class
+    // Process any pending song ID requests that came in before loading completed
+    private fun processPendingSongRequests() {
+        if (pendingSongRequests.isNotEmpty()) {
+            val songId = pendingSongRequests.removeFirst()
+            Log.d("PlayerViewModel", "Processing pending request for song ID: $songId")
+            val song = allSongs.find { it.id == songId }
+            if (song != null) {
+                Log.d("PlayerViewModel", "Found pending song: ${song.title}")
+                _currentSong.value = song  // Set this explicitly before playing
+                playSong(song)
+            } else {
+                Log.e("PlayerViewModel", "Pending song with ID $songId not found")
+            }
+        }
+    }
+
     fun getSongById(songId: String): Song? {
         return allSongs.find { it.id == songId }
+    }
+
+    fun playSongById(songId: String) {
+        Log.d("PlayerViewModel", "playSongById called with ID: $songId")
+
+        if (_isLoading.value) {
+            // If still loading, queue this request to be processed when loading completes
+            Log.d("PlayerViewModel", "Songs still loading, queueing request for later")
+            pendingSongRequests.add(songId)
+            return
+        }
+
+        // Songs are loaded, try to find and play immediately
+        val song = allSongs.find { it.id == songId }
+        if (song != null) {
+            Log.d("PlayerViewModel", "Found song: ${song.title}")
+            _currentSong.value = song  // Set this explicitly before playing
+            playSong(song)
+        } else {
+            Log.e("PlayerViewModel", "Song with ID $songId not found")
+        }
     }
 
     fun playSong(song: Song) {
         stopCurrentSong()
         _currentSong.value = song
+        _isLiked.value = song.isLiked
         currentIndex = allSongs.indexOfFirst { it.id == song.id }
         Log.d("PlayerViewModel", "Playing song: ${song.title} from ${song.audioUrl}")
+
+        viewModelScope.launch {
+            try {
+                repository.updateLastPlayed(song.id.toLong())
+                Log.d("PlayerViewModel", "Updated lastPlayedAt for song: ${song.title}")
+            } catch (e: Exception) {
+                Log.e("PlayerViewModel", "Error updating lastPlayedAt: ${e.message}")
+            }
+        }
 
         try {
             mediaPlayer = MediaPlayer()
@@ -88,22 +150,18 @@ class PlayerViewModel(application: Application) : AndroidViewModel(application) 
                 try {
                     val context = getApplication<Application>().applicationContext
                     val uri = Uri.parse(song.audioUrl)
-
                     // For content URIs, we need to use a different approach
                     if (song.audioUrl.startsWith("content://")) {
                         Log.d("PlayerViewModel", "Handling content URI")
-
                         // Check if we have permission first
                         val contentResolver = context.contentResolver
                         val hasPermission = contentResolver.persistedUriPermissions.any {
                             it.uri.toString() == song.audioUrl && it.isReadPermission
                         }
-
                         if (!hasPermission) {
                             Log.e("PlayerViewModel", "No permission for URI: ${song.audioUrl}")
                             throw SecurityException("No permission for URI: ${song.audioUrl}")
                         }
-
                         // We have permission, try to open file descriptor
                         val parcelFileDescriptor = context.contentResolver.openFileDescriptor(uri, "r")
                         parcelFileDescriptor?.use { pfd ->
@@ -126,9 +184,7 @@ class PlayerViewModel(application: Application) : AndroidViewModel(application) 
                     else {
                         setDataSource(song.audioUrl)
                     }
-
                     prepareAsync()
-
                     setOnPreparedListener {
                         _duration.value = it.duration
                         _currentPosition.value = 0
@@ -144,7 +200,7 @@ class PlayerViewModel(application: Application) : AndroidViewModel(application) 
                     setOnCompletionListener {
                         _isPlaying.value = false
                         handler.removeCallbacks(updateProgressRunnable)
-                        playNext() // Auto-play next song when current finishes
+                        playNext()
                     }
                 } catch (e: SecurityException) {
                     Log.e("PlayerViewModel", "Security exception: ${e.message}")
@@ -152,7 +208,7 @@ class PlayerViewModel(application: Application) : AndroidViewModel(application) 
                     _isPlaying.value = false
                 } catch (e: IOException) {
                     Log.e("PlayerViewModel", "IO exception: ${e.message}")
-                    showToast("Could not play the audio file. Please try again.")
+                    showToast("Could not play the audio file.")
                     _isPlaying.value = false
                 } catch (e: IllegalArgumentException) {
                     Log.e("PlayerViewModel", "Illegal argument: ${e.message}")
@@ -170,15 +226,6 @@ class PlayerViewModel(application: Application) : AndroidViewModel(application) 
     private fun showToast(message: String) {
         Handler(Looper.getMainLooper()).post {
             Toast.makeText(getApplication(), message, Toast.LENGTH_SHORT).show()
-        }
-    }
-
-    fun playSongById(songId: String) {
-        val song = allSongs.find { it.id == songId }
-        if (song != null) {
-            playSong(song)
-        } else {
-            Log.e("PlayerViewModel", "Song with ID $songId not found")
         }
     }
 
@@ -225,6 +272,34 @@ class PlayerViewModel(application: Application) : AndroidViewModel(application) 
         mediaPlayer = null
         _isPlaying.value = false
         handler.removeCallbacks(updateProgressRunnable)
+    }
+
+    fun toggleFavorite() {
+        _currentSong.value?.let { song ->
+            val newLikedStatus = !_isLiked.value
+            _isLiked.value = newLikedStatus
+
+            viewModelScope.launch {
+                try {
+                    repository.toggleLiked(song.id.toLong(), newLikedStatus)
+                    Log.d("PlayerViewModel", "Updated favorite status for song: ${song.title} to $newLikedStatus")
+
+                    val updatedSongs = allSongs.toMutableList()
+                    val index = updatedSongs.indexOfFirst { it.id == song.id }
+                    if (index != -1) {
+                        updatedSongs[index] = updatedSongs[index].copy(isLiked = newLikedStatus)
+                        allSongs = updatedSongs
+                        _currentSong.value = _currentSong.value?.copy(isLiked = newLikedStatus)
+                    }
+                } catch (e: Exception) {
+                    Log.e("PlayerViewModel", "Error updating favorite status: ${e.message}")
+                    _isLiked.value = !newLikedStatus
+                }
+            }
+        } ?: run {
+            Log.e("PlayerViewModel", "Cannot toggle favorite: No current song")
+            showToast("No song is currently selected")
+        }
     }
 
     override fun onCleared() {

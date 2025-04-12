@@ -43,6 +43,7 @@ class SongPlaybackFragment : Fragment() {
     private lateinit var btnNext: ImageButton
     private lateinit var btnPrev: ImageButton
     private lateinit var btnEditSong: ImageButton
+    private lateinit var btnFavorite: ImageButton
     private lateinit var textCurrentTime: TextView
     private lateinit var textTotalTime: TextView
 
@@ -55,7 +56,6 @@ class SongPlaybackFragment : Fragment() {
             this,
             ViewModelProvider.AndroidViewModelFactory.getInstance(requireActivity().application)
         )[PlayerViewModel::class.java]
-
         return inflater.inflate(R.layout.fragment_song_playback, container, false)
     }
 
@@ -68,6 +68,18 @@ class SongPlaybackFragment : Fragment() {
         // Initialize UI components
         initializeViews(view)
 
+        // Setup loading state observer first
+        viewLifecycleOwner.lifecycleScope.launch {
+            viewModel.isLoading.collect { isLoading ->
+                if (isLoading) {
+                    // Maybe show a loading indicator here
+                    Log.d("SongPlayback", "Waiting for songs to load...")
+                } else {
+                    Log.d("SongPlayback", "Songs loaded")
+                }
+            }
+        }
+
         // First check permissions
         if (checkAndRequestPermissions()) {
             // Only try to play if permissions are granted and we have the song ID
@@ -78,19 +90,32 @@ class SongPlaybackFragment : Fragment() {
             }
         }
 
-        // Set up click listeners
         setupClickListeners()
 
-        // Set up seek bar listener
         setupSeekBarListener()
 
-        // Set up observers for LiveData/StateFlow
         setupObservers()
 
-        // Debug: Observe the current song state
         viewLifecycleOwner.lifecycleScope.launch {
             viewModel.currentSong.collect { song ->
                 Log.d("SongPlayback", "Current song state changed: ${song?.title ?: "null"}")
+
+                song?.let {
+                    textTitle.text = it.title
+                    textArtist.text = it.artist
+                    Picasso.get()
+                        .load(it.albumArt)
+                        .placeholder(R.drawable.placeholder_album_art)
+                        .error(R.drawable.placeholder_album_art)
+                        .into(imageAlbum)
+                    seekBar.progress = 0
+                } ?: run {
+                    // Handle null song state
+                    Log.d("SongPlayback", "Current song is null, waiting for data...")
+                    textTitle.text = "Loading..."
+                    textArtist.text = ""
+                    // Set Image Default (If Needed)
+                }
             }
         }
     }
@@ -99,18 +124,15 @@ class SongPlaybackFragment : Fragment() {
         try {
             val uri = Uri.parse(uriString)
             val contentResolver = requireContext().contentResolver
-
             // Check if we already have the permission
             val list = contentResolver.persistedUriPermissions
             val alreadyHasPermission = list.any {
                 it.uri.toString() == uriString && it.isReadPermission
             }
-
             if (alreadyHasPermission) {
                 Log.d("SongPlayback", "Already have persistent URI permission for: $uri")
                 return true
             }
-
             // If we don't have it already, try to take it
             val takeFlags = Intent.FLAG_GRANT_READ_URI_PERMISSION
             contentResolver.takePersistableUriPermission(uri, takeFlags)
@@ -130,6 +152,7 @@ class SongPlaybackFragment : Fragment() {
         btnNext = view.findViewById(R.id.btn_next)
         btnPrev = view.findViewById(R.id.btn_prev)
         btnEditSong = view.findViewById(R.id.btn_edit_delete_song)
+        btnFavorite = view.findViewById(R.id.btn_favorite)
         textCurrentTime = view.findViewById(R.id.text_current_time)
         textTotalTime = view.findViewById(R.id.text_total_time)
         seekBar = view.findViewById(R.id.seek_bar)
@@ -147,6 +170,10 @@ class SongPlaybackFragment : Fragment() {
 
         btnPrev.setOnClickListener {
             viewModel.playPrevious()
+        }
+
+        btnFavorite.setOnClickListener {
+            viewModel.toggleFavorite()
         }
 
         btnEditSong.setOnClickListener {
@@ -192,7 +219,11 @@ class SongPlaybackFragment : Fragment() {
                         song?.let {
                             textTitle.text = it.title
                             textArtist.text = it.artist
-                            Picasso.get().load(it.albumArt).into(imageAlbum)
+                            Picasso.get()
+                                .load(it.albumArt)
+                                .placeholder(R.drawable.placeholder_album_art)
+                                .error(R.drawable.placeholder_album_art)
+                                .into(imageAlbum)
                             seekBar.progress = 0
                         }
                     }
@@ -203,7 +234,6 @@ class SongPlaybackFragment : Fragment() {
                         btnPlay.setImageResource(
                             if (isPlaying) R.drawable.ic_pause_filled else R.drawable.ic_play_filled
                         )
-//                        if (isPlaying) simulateProgress()
                     }
                 }
 
@@ -220,29 +250,28 @@ class SongPlaybackFragment : Fragment() {
                         textTotalTime.text = formatDuration(duration)
                     }
                 }
+
+                launch {
+                    viewModel.isLiked.collectLatest { isLiked ->
+                        updateFavoriteButton(isLiked)
+                    }
+                }
             }
         }
     }
 
-//    private fun simulateProgress() {
-//        handler.post(object : Runnable {
-//            var progress = seekBar.progress
-//            override fun run() {
-//                if (viewModel.isPlaying.value && progress < seekBar.max) {
-//                    progress++
-//                    seekBar.progress = progress
-//                    textCurrentTime.text = formatDuration(progress)
-//                    handler.postDelayed(this, 1000)
-//                }
-//            }
-//        })
-//    }
+    private fun updateFavoriteButton(isLiked: Boolean) {
+        btnFavorite.setImageResource(
+            if (isLiked) R.drawable.ic_fav else R.drawable.ic_fav_border
+        )
+    }
 
     private fun navigateToEditDeleteSong(songId: String?) {
         if (songId == null) {
             Toast.makeText(requireContext(), "Song ID not available", Toast.LENGTH_SHORT).show()
             return
         }
+
         try {
             val longId = songId.toLong()
             val bundle = Bundle().apply {
@@ -313,10 +342,12 @@ class SongPlaybackFragment : Fragment() {
         grantResults: IntArray
     ) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults)
+
         if (requestCode == REQUEST_PERMISSION_CODE) {
             if (grantResults.isNotEmpty() && grantResults.all { it == PackageManager.PERMISSION_GRANTED }) {
                 // Permission granted, retry playing the song
                 Log.d("Permissions", "Storage permission granted")
+
                 val songId = arguments?.getString("songId")
                 songId?.let {
                     val currentSong = viewModel.getSongById(it)
