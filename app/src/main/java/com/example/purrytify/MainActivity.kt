@@ -113,7 +113,7 @@ fun MiniPlayerComposable(playerViewModel: PlayerViewModel, navController: NavCon
                         if (navController.currentDestination?.id != R.id.navigation_song_playback) {
                             navController.navigate(
                                 R.id.navigation_song_playback,
-                                bundleOf("song_id" to song.id)
+                                bundleOf("songId" to song.id)
                             )
                         }
                     },

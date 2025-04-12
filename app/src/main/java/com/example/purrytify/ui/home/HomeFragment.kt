@@ -63,7 +63,7 @@ class HomeFragment : Fragment() {
 
     private fun navigateToPlayback(songId: String) {
         val bundle = Bundle().apply {
-            putString("song_id", songId)
+            putString("songId", songId)
         }
         navController.navigate(R.id.navigation_song_playback, bundle)
     }
