@@ -34,19 +34,17 @@ class ProfileFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
-        if (!NetworkUtil.isNetworkAvailable(requireContext())) {
-            binding.profileComposeView.setContent {
-                NetworkUtil.NoInternetScreen()
-            }
-        } else {
-            // Fetch user profile data if network is available
-            profileViewModel.fetchUserProfile(requireContext())
-            binding.profileComposeView.setContent {
-                PurrytifyTheme {
-                    Surface(
-                        modifier = Modifier.fillMaxSize(),
-                        color = MaterialTheme.colorScheme.background
-                    ) {
+        binding.profileComposeView.setContent {
+            PurrytifyTheme {
+                Surface(
+                    modifier = Modifier.fillMaxSize(),
+                    color = MaterialTheme.colorScheme.background
+                ) {
+                    if (!NetworkUtil.isNetworkAvailable(requireContext())) {
+                        NetworkUtil.NoInternetScreen()
+                    } else {
+                        // Fetch user profile data if network is available
+                        profileViewModel.fetchUserProfile(requireContext())
                         ProfileScreen(viewModel = profileViewModel)
                     }
                 }
