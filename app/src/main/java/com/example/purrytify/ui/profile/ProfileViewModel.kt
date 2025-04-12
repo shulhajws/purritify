@@ -5,6 +5,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.purrytify.model.UserProfile
 import com.example.purrytify.network.RetrofitClient
+import com.example.purrytify.util.NetworkUtil
 import com.example.purrytify.util.TokenManager
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -52,6 +53,12 @@ class ProfileViewModel : ViewModel() {
     }
 
     fun fetchUserProfile(context: Context) {
+        // Prevent server request if no internet
+        if (!NetworkUtil.isNetworkAvailable(context)) {
+            // Handle no internet case
+            return
+        }
+
         val token = TokenManager.getToken(context)
         if (token.isNullOrEmpty()) return
 
