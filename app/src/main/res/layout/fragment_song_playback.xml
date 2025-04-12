@@ -10,6 +10,16 @@
         android:layout_height="wrap_content"
         android:padding="24dp">
 
+        <ImageButton
+            android:id="@+id/btn_edit_delete_song"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_alignParentTop="true"
+            android:layout_alignParentEnd="true"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:src="@drawable/ic_edit_pencil"
+            android:contentDescription="More Options" />
+
         <ImageView
             android:id="@+id/image_album"
             android:layout_width="match_parent"
