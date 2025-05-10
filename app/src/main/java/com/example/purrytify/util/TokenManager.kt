@@ -2,6 +2,7 @@ package com.example.purrytify.util
 
 import android.content.Context
 import android.content.SharedPreferences
+import android.util.Log
 import androidx.security.crypto.EncryptedSharedPreferences
 import androidx.security.crypto.MasterKey
 import com.example.purrytify.network.RetrofitClient
@@ -37,6 +38,7 @@ object TokenManager {
             .putString(TOKEN_KEY, token)
             .putLong(TOKEN_TIMESTAMP_KEY, System.currentTimeMillis())
             .apply()
+        Log.d("Token_Manager", "Token saved: $token")
     }
 
     fun getToken(context: Context): String? {
@@ -82,6 +84,7 @@ object TokenManager {
         return withContext(Dispatchers.IO) {
             // If token is expired based on timestamp, try to refresh
             if (isTokenExpired(context)) {
+                Log.d("Token_Manager", "Token is expired, trying to refresh")
                 val refreshToken = getRefreshToken(context)
                 if (refreshToken != null) {
                     try {
@@ -113,6 +116,7 @@ object TokenManager {
             try {
                 val token = getToken(context) ?: return@withContext false
                 val response = RetrofitClient.instance.verifyToken("Bearer $token").execute()
+                Log.d("Token_Manager", "response.message: ${response.message()}")
 
                 return@withContext if (response.isSuccessful) {
                     true

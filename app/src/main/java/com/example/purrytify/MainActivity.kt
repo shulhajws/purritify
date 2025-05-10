@@ -45,26 +45,37 @@ class MainActivity : AppCompatActivity() {
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
-        // Check token validity first
         lifecycleScope.launch {
-            val isValid = checkTokenValidity()
+            try {
+                Log.d("MainActivity", "Starting token validation check")
+                val isValid = checkTokenValidity()
+                Log.d("MainActivity", "Token validation result: $isValid")
 
-            if (!isValid) {
-                // User is not logged in or token is invalid, redirect to LoginActivity
+                if (!isValid) {
+                    // User is not logged in or token is invalid, redirect to LoginActivity
+                    Log.e("MainActivity", "User is not logged in or token is invalid")
+                    startActivity(Intent(this@MainActivity, LoginActivity::class.java))
+                    finish()
+                    return@launch
+                }
+
+                Log.d("MainActivity", "Token valid, initializing app")
+                initializeApp()
+            } catch (e: Exception) {
+                Log.e("MainActivity", "Exception during token validation: ${e.message}", e)
                 startActivity(Intent(this@MainActivity, LoginActivity::class.java))
                 finish()
-                return@launch
             }
-
-            // User is logged in with valid token, proceed with MainActivity
-            initializeApp()
         }
     }
 
     private suspend fun checkTokenValidity(): Boolean {
+        Log.d("MainActivity","Masuk check token validity")
         // First check if token exists
         val token = TokenManager.getToken(this)
+        Log.d("MainActivity", "Token: $token")
         if (token.isNullOrEmpty()) {
+            Log.e("MainActivity", "Token is null or empty")
             return false
         }
 
