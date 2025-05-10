@@ -45,31 +45,49 @@ class MainActivity : AppCompatActivity() {
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
-        // Check if user is logged in
+        // Check token validity first
+        lifecycleScope.launch {
+            val isValid = checkTokenValidity()
+
+            if (!isValid) {
+                // User is not logged in or token is invalid, redirect to LoginActivity
+                startActivity(Intent(this@MainActivity, LoginActivity::class.java))
+                finish()
+                return@launch
+            }
+
+            // User is logged in with valid token, proceed with MainActivity
+            initializeApp()
+        }
+    }
+
+    private suspend fun checkTokenValidity(): Boolean {
+        // First check if token exists
         val token = TokenManager.getToken(this)
         if (token.isNullOrEmpty()) {
-            // User is not logged in, redirect to LoginActivity
-            startActivity(Intent(this, LoginActivity::class.java))
-            finish() // Close MainActivity
-        } else {
-            // User is logged in, proceed with MainActivity
+            return false
+        }
 
-            // Fetch user profile data
-            sharedViewModel.fetchUserProfile(this)
+        // Then verify/refresh token with server
+        return TokenManager.verifyAndRefreshTokenIfNeeded(this)
+    }
 
-            // Call schedulerTokenVerification()
-            scheduleTokenVerification(this)
+    private fun initializeApp() {
+        // Fetch user profile data
+        sharedViewModel.fetchUserProfile(this)
 
-            lifecycleScope.launch {
-                repeatOnLifecycle(Lifecycle.State.STARTED) {
-                    sharedViewModel.globalUserProfile.collect { userProfile ->
-                        userProfile?.let { profile ->
-                            try {
-                                val userId = profile.id.toInt()
-                                playerViewModel.updateForUser(userId)
-                            } catch (e: NumberFormatException) {
-                                Log.e("MainActivity", "Invalid user ID format: ${profile.id}")
-                            }
+        // Call scheduleTokenVerification() for periodic checks
+        scheduleTokenVerification(this)
+
+        lifecycleScope.launch {
+            repeatOnLifecycle(Lifecycle.State.STARTED) {
+                sharedViewModel.globalUserProfile.collect { userProfile ->
+                    userProfile?.let { profile ->
+                        try {
+                            val userId = profile.id.toInt()
+                            playerViewModel.updateForUser(userId)
+                        } catch (e: NumberFormatException) {
+                            Log.e("MainActivity", "Invalid user ID format: ${profile.id}")
                         }
                     }
                 }
@@ -126,7 +144,7 @@ class MainActivity : AppCompatActivity() {
             MiniPlayerComposable(playerViewModel, navController)
         }
 
-        // Menyembunyikan mini player saat currentSong null
+        // Hide mini player when currentSong is null
         lifecycleScope.launch {
             playerViewModel.currentSong.collectLatest { song ->
                 val isInPlayerScreen = navController.currentDestination?.id == R.id.navigation_song_playback
@@ -134,7 +152,6 @@ class MainActivity : AppCompatActivity() {
                     if (song != null && !isInPlayerScreen) View.VISIBLE else View.GONE
             }
         }
-
     }
 }
 
