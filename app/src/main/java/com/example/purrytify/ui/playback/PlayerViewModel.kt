@@ -1,4 +1,3 @@
-//PlayerViewModel.kt
 package com.example.purrytify.ui.playback
 
 import android.app.Application
@@ -9,15 +8,15 @@ import android.os.Looper
 import android.util.Log
 import android.widget.Toast
 import androidx.lifecycle.AndroidViewModel
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
-import androidx.lifecycle.ViewModel
 import androidx.lifecycle.asFlow
 import androidx.lifecycle.viewModelScope
 import com.example.purrytify.data.AppDatabase
 import com.example.purrytify.data.mapper.SongMapper
 import com.example.purrytify.model.Song
 import com.example.purrytify.repository.SongRepository
+import com.example.purrytify.util.EventBus
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 import java.io.IOException
 
@@ -72,6 +71,34 @@ class PlayerViewModel(application: Application) : AndroidViewModel(application) 
         val database = AppDatabase.getDatabase(application)
         repository = SongRepository(database.songDao())
         _isLoading.value = true
+
+        // Listen for song deletion events
+        viewModelScope.launch {
+            EventBus.songDeletedEvents.collect { songId ->
+                Log.d("PlayerViewModel", "Song deletion event received for song ID: $songId")
+                if (_currentSong.value?.id == songId.toString()) {
+                    stopCurrentSong()
+                    _currentSong.value = null
+                }
+            }
+        }
+
+        // Listen for song update events
+        viewModelScope.launch {
+            EventBus.songUpdatedEvents.collect { songId ->
+                Log.d("PlayerViewModel", "Song update event received for song ID: $songId")
+                if (_currentSong.value?.id == songId.toString()) {
+                    // Currently playing song was updated, refresh its details
+                    viewModelScope.launch {
+                        repository.getSongById(songId)?.let { updatedSongEntity ->
+                            val updatedSong = SongMapper.toSong(updatedSongEntity)
+                            _currentSong.value = updatedSong
+                            _isLiked.value = updatedSong.isLiked
+                        }
+                    }
+                }
+            }
+        }
     }
 
     fun updateForUser(userId: Int) {
@@ -80,14 +107,34 @@ class PlayerViewModel(application: Application) : AndroidViewModel(application) 
         _isLoading.value = true
 
         viewModelScope.launch {
-            // Use the user-specific method from repository
             repository.getSongsByUserId(userId).asFlow().collect { songEntities ->
-                allSongs = SongMapper.toSongList(songEntities)
-                Log.d("PlayerViewModel", "Songs updated for user $userId: ${allSongs.size} songs")
+                val newSongsList = SongMapper.toSongList(songEntities)
+
+                // Check if the currently playing song was deleted
+                if (_currentSong.value != null && !songWasDeleted(_currentSong.value!!, newSongsList)) {
+                    // Current song still exists, update the list
+                    allSongs = newSongsList
+                    currentIndex = allSongs.indexOfFirst { it.id == _currentSong.value?.id }
+                    if (currentIndex < 0) currentIndex = 0
+                } else {
+                    // Current song was deleted or no song is playing
+                    val wasPlaying = _isPlaying.value
+                    if (wasPlaying) {
+                        stopCurrentSong()
+                    }
+                    allSongs = newSongsList
+                }
+
                 _isLoading.value = false
                 processPendingSongRequests()
+
+                Log.d("PlayerViewModel", "Songs updated for user $userId: ${allSongs.size} songs")
             }
         }
+    }
+
+    private fun songWasDeleted(song: Song, newSongsList: List<Song>): Boolean {
+        return newSongsList.none { it.id == song.id }
     }
 
     // Process any pending song ID requests that came in before loading completed
@@ -108,7 +155,6 @@ class PlayerViewModel(application: Application) : AndroidViewModel(application) 
         }
     }
 
-
     fun getSongById(songId: String): Song? {
         return allSongs.find { it.id == songId }
     }
@@ -126,13 +172,11 @@ class PlayerViewModel(application: Application) : AndroidViewModel(application) 
         if (song != null) {
             Log.d("PlayerViewModel", "Found song: ${song.title}")
 
-            // Cek jika lagu yang diminta sudah jadi currentSong dan sedang diputar
             if (_currentSong.value?.id == songId && _isPlaying.value) {
                 Log.d("PlayerViewModel", "Same song is already playing, ignoring request.")
-                return // Tidak lakukan apapun
+                return
             }
 
-            // Kalau lagu beda atau sedang tidak diputar, lanjutkan play
             if (_currentSong.value?.id != songId) {
                 stopCurrentSong()
                 _currentSong.value = song
@@ -317,25 +361,6 @@ class PlayerViewModel(application: Application) : AndroidViewModel(application) 
             showToast("No song is currently selected")
         }
     }
-//    fun onSongRequest(songId: String) {
-//        if (allSongs.isEmpty()) {
-//            // Lagu belum dimuat → simpan permintaan
-//            pendingSongRequests.add(songId)
-//        } else {
-//            // Lagu sudah tersedia → langsung mainkan
-//            val song = allSongs.find { it.id == songId }
-//            if (song != null) {
-//                _currentSong.value = song
-//                playSong(song)
-//            } else {
-//                Log.e("PlayerViewModel","No song found")
-//            }
-//        }
-//    }
-//    fun onAllSongsLoaded(songs: List<Song>) {
-//        allSongs = songs
-//        processPendingSongRequests()
-//    }
 
     override fun onCleared() {
         super.onCleared()

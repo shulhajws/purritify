@@ -1,11 +1,9 @@
 package com.example.purrytify.ui.library
 
 import android.app.Application
-import android.content.ContentResolver
 import android.content.Context
 import android.media.MediaMetadataRetriever
 import android.net.Uri
-import android.provider.MediaStore
 import android.provider.OpenableColumns
 import android.util.Log
 import android.widget.Toast
@@ -14,6 +12,7 @@ import androidx.lifecycle.viewModelScope
 import com.example.purrytify.data.AppDatabase
 import com.example.purrytify.data.entity.SongEntity
 import com.example.purrytify.repository.SongRepository
+import com.example.purrytify.util.EventBus
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -72,7 +71,8 @@ class AddSongViewModel(application: Application) : AndroidViewModel(application)
                             artworkUri = if (song.artworkPath != null) Uri.parse(song.artworkPath) else null,
                             songFileName = getFileNameFromUri(getApplication(), Uri.parse(song.filePath)),
                             editMode = true,
-                            isLoading = false
+                            isLoading = false,
+                            uploadedAt = song.uploadedAt
                         )
                     }
                 }
@@ -108,7 +108,7 @@ class AddSongViewModel(application: Application) : AndroidViewModel(application)
             val fileName = getFileNameFromUri(getApplication(), uri)
             _state.update { it.copy(songFileName = fileName) }
             val retriever = MediaMetadataRetriever()
-            retriever.setDataSource(getApplication<Application>(), uri)
+            retriever.setDataSource(getApplication(), uri)
 
             val durationStr = retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_DURATION)
             val duration = durationStr?.toLong() ?: 0
@@ -164,6 +164,7 @@ class AddSongViewModel(application: Application) : AndroidViewModel(application)
 
                 if (currentState.editMode) {
                     repository.update(song)
+                    EventBus.publishSongUpdated(song.id)
                 } else {
                     repository.insert(song)
                 }
@@ -201,7 +202,11 @@ class AddSongViewModel(application: Application) : AndroidViewModel(application)
             try {
                 val song = repository.getSongById(currentState.songId)
                 song?.let {
+                    val songId = it.id
                     repository.delete(it)
+
+                    EventBus.publishSongDeleted(songId)
+
                     _state.update { state ->
                         state.copy(
                             isLoading = false,
