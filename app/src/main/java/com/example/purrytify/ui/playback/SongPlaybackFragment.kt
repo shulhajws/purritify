@@ -30,6 +30,7 @@ import androidx.fragment.app.activityViewModels
 import androidx.navigation.NavController
 import androidx.navigation.fragment.NavHostFragment
 import com.example.purrytify.ui.shared.SharedViewModel
+import com.example.purrytify.util.EventBus
 
 class SongPlaybackFragment : Fragment() {
     private lateinit var navController: NavController
@@ -140,6 +141,17 @@ class SongPlaybackFragment : Fragment() {
                     textTitle.text = "Loading..."
                     textArtist.text = ""
                     // Set Image Default (If Needed)
+                }
+            }
+        }
+
+        viewLifecycleOwner.lifecycleScope.launch {
+            repeatOnLifecycle(Lifecycle.State.STARTED) {
+                EventBus.navigateAwayFromDeletedSong.collect { deletedSongId ->
+                    val currentSongId = arguments?.getString("songId")
+                    if (currentSongId == deletedSongId) {
+                        navController.navigateUp()
+                    }
                 }
             }
         }
