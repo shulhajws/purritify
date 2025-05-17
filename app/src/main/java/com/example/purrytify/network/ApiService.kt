@@ -32,7 +32,7 @@ interface ApiService {
     ): UserProfileResponse
 
     // Verify Token API
-    @POST("/api/verify-token")
+    @GET("/api/verify-token")
     fun verifyToken(
         @Header("Authorization") token: String
     ): Call<Void>
