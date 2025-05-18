@@ -10,7 +10,9 @@ import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
-import androidx.compose.runtime.*
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.ComposeView
 import androidx.core.os.bundleOf
@@ -45,31 +47,60 @@ class MainActivity : AppCompatActivity() {
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
-        // Check if user is logged in
+        lifecycleScope.launch {
+            try {
+                Log.d("MainActivity", "Starting token validation check")
+                val isValid = checkTokenValidity()
+                Log.d("MainActivity", "Token validation result: $isValid")
+
+                if (!isValid) {
+                    // User is not logged in or token is invalid, redirect to LoginActivity
+                    Log.e("MainActivity", "User is not logged in or token is invalid")
+                    startActivity(Intent(this@MainActivity, LoginActivity::class.java))
+                    finish()
+                    return@launch
+                }
+
+                Log.d("MainActivity", "Token valid, initializing app")
+                initializeApp()
+            } catch (e: Exception) {
+                Log.e("MainActivity", "Exception during token validation: ${e.message}", e)
+                startActivity(Intent(this@MainActivity, LoginActivity::class.java))
+                finish()
+            }
+        }
+    }
+
+    private suspend fun checkTokenValidity(): Boolean {
+        Log.d("MainActivity","Masuk check token validity")
+        // First check if token exists
         val token = TokenManager.getToken(this)
+        Log.d("MainActivity", "Token: $token")
         if (token.isNullOrEmpty()) {
-            // User is not logged in, redirect to LoginActivity
-            startActivity(Intent(this, LoginActivity::class.java))
-            finish() // Close MainActivity
-        } else {
-            // User is logged in, proceed with MainActivity
+            Log.e("MainActivity", "Token is null or empty")
+            return false
+        }
 
-            // Fetch user profile data
-            sharedViewModel.fetchUserProfile(this)
+        // Then verify/refresh token with server
+        return TokenManager.verifyAndRefreshTokenIfNeeded(this)
+    }
 
-            // Call schedulerTokenVerification()
-            scheduleTokenVerification(this)
+    private fun initializeApp() {
+        // Fetch user profile data
+        sharedViewModel.fetchUserProfile(this)
 
-            lifecycleScope.launch {
-                repeatOnLifecycle(Lifecycle.State.STARTED) {
-                    sharedViewModel.globalUserProfile.collect { userProfile ->
-                        userProfile?.let { profile ->
-                            try {
-                                val userId = profile.id.toInt()
-                                playerViewModel.updateForUser(userId)
-                            } catch (e: NumberFormatException) {
-                                Log.e("MainActivity", "Invalid user ID format: ${profile.id}")
-                            }
+        // Call scheduleTokenVerification() for periodic checks
+        scheduleTokenVerification(this)
+
+        lifecycleScope.launch {
+            repeatOnLifecycle(Lifecycle.State.STARTED) {
+                sharedViewModel.globalUserProfile.collect { userProfile ->
+                    userProfile?.let { profile ->
+                        try {
+                            val userId = profile.id.toInt()
+                            playerViewModel.updateForUser(userId)
+                        } catch (e: NumberFormatException) {
+                            Log.e("MainActivity", "Invalid user ID format: ${profile.id}")
                         }
                     }
                 }
@@ -126,7 +157,7 @@ class MainActivity : AppCompatActivity() {
             MiniPlayerComposable(playerViewModel, navController)
         }
 
-        // Menyembunyikan mini player saat currentSong null
+        // Hide mini player when currentSong is null
         lifecycleScope.launch {
             playerViewModel.currentSong.collectLatest { song ->
                 val isInPlayerScreen = navController.currentDestination?.id == R.id.navigation_song_playback
@@ -134,7 +165,6 @@ class MainActivity : AppCompatActivity() {
                     if (song != null && !isInPlayerScreen) View.VISIBLE else View.GONE
             }
         }
-
     }
 }
 

@@ -1,35 +1,37 @@
 //SongPlaybackFragment.kt
 package com.example.purrytify.ui.playback
 
-import android.os.Bundle
-import android.os.Handler
-import android.os.Looper
-import android.view.LayoutInflater
-import android.view.View
-import android.view.ViewGroup
-import android.widget.*
-import androidx.fragment.app.Fragment
-import androidx.fragment.app.viewModels
-import androidx.lifecycle.Lifecycle
-import androidx.lifecycle.ViewModelProvider
-import androidx.lifecycle.lifecycleScope
-import androidx.lifecycle.repeatOnLifecycle
-import com.example.purrytify.R
-import com.squareup.picasso.Picasso
-import kotlinx.coroutines.flow.collectLatest
-import kotlinx.coroutines.launch
 import android.Manifest
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.net.Uri
 import android.os.Build
+import android.os.Bundle
+import android.os.Handler
+import android.os.Looper
 import android.util.Log
+import android.view.LayoutInflater
+import android.view.View
+import android.view.ViewGroup
+import android.widget.ImageButton
+import android.widget.ImageView
+import android.widget.SeekBar
+import android.widget.TextView
 import android.widget.Toast
 import androidx.core.content.ContextCompat
+import androidx.fragment.app.Fragment
 import androidx.fragment.app.activityViewModels
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.ViewModelProvider
+import androidx.lifecycle.lifecycleScope
+import androidx.lifecycle.repeatOnLifecycle
 import androidx.navigation.NavController
 import androidx.navigation.fragment.NavHostFragment
+import com.example.purrytify.R
 import com.example.purrytify.ui.shared.SharedViewModel
+import com.squareup.picasso.Picasso
+import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.launch
 
 class SongPlaybackFragment : Fragment() {
     private lateinit var navController: NavController
@@ -125,6 +127,19 @@ class SongPlaybackFragment : Fragment() {
             viewModel.currentSong.collect { song ->
                 Log.d("SongPlayback", "Current song state changed: ${song?.title ?: "null"}")
 
+                if (song == null) {
+                    val songId = arguments?.getString("songId")
+                    if (songId != null && viewModel.getSongById(songId) == null) {
+                        Log.d("SongPlayback", "Song no longer exists, navigating away")
+
+                        Handler(Looper.getMainLooper()).postDelayed({
+                            if (isAdded() && !isDetached()) {
+                                navController.navigateUp()
+                            }
+                        }, 100)
+                    }
+                }
+
                 song?.let {
                     textTitle.text = it.title
                     textArtist.text = it.artist
@@ -141,6 +156,21 @@ class SongPlaybackFragment : Fragment() {
                     textArtist.text = ""
                     // Set Image Default (If Needed)
                 }
+            }
+        }
+    }
+
+    override fun onResume() {
+        super.onResume()
+        Log.d("SongPlayback", "onResume called")
+
+        val songId = arguments?.getString("songId")
+        songId?.let {
+            // Check if the song exists
+            val song = viewModel.getSongById(it)
+            if (song == null) {
+                Log.d("SongPlayback", "Song no longer exists in onResume, navigating away")
+                navController.navigateUp()
             }
         }
     }
@@ -318,7 +348,13 @@ class SongPlaybackFragment : Fragment() {
 
     override fun onDestroyView() {
         super.onDestroyView()
+        Log.d("SongPlayback", "onDestroyView called")
         handler.removeCallbacksAndMessages(null)
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+        Log.d("SongPlayback", "onDestroy called")
     }
 
     private fun checkAndRequestPermissions(): Boolean {

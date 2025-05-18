@@ -32,7 +32,7 @@ class LibraryViewModel(application: Application) : AndroidViewModel(application)
     }
 
     fun updateForUser(userId: Int) {
-        if (currentUserId == userId) return // Avoid unnecessary updates
+        if (currentUserId == userId) return
         currentUserId = userId
 
         viewModelScope.launch {
