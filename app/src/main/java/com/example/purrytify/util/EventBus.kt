@@ -13,13 +13,6 @@ object EventBus {
     private val _songUpdatedEvents = MutableSharedFlow<Long>(replay = 0)
     val songUpdatedEvents: SharedFlow<Long> = _songUpdatedEvents.asSharedFlow()
 
-    private val _navigateAwayFromDeletedSong = MutableSharedFlow<String>(replay = 0)
-    val navigateAwayFromDeletedSong: SharedFlow<String> = _navigateAwayFromDeletedSong.asSharedFlow()
-
-    suspend fun publishNavigateAwayFromDeletedSong(songId: String) {
-        _navigateAwayFromDeletedSong.emit(songId)
-    }
-
     suspend fun publishSongDeleted(songId: Long) {
         _songDeletedEvents.emit(songId)
     }

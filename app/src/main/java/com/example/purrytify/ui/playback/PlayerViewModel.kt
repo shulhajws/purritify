@@ -76,17 +76,13 @@ class PlayerViewModel(application: Application) : AndroidViewModel(application) 
         viewModelScope.launch {
             EventBus.songDeletedEvents.collect { songId ->
                 Log.d("PlayerViewModel", "Song deletion event received for song ID: $songId")
-                if (_currentSong.value?.id == songId.toString()) {
-                    val songIdString = _currentSong.value?.id
+                val currentSongId = _currentSong.value?.id
+                Log.d("PlayerViewModel", "Current song ID: $currentSongId")
+
+                if (currentSongId == songId.toString()) {
+                    Log.d("PlayerViewModel", "Current song matches deleted song, stopping playback")
                     stopCurrentSong()
                     _currentSong.value = null
-
-                    // Emit navigation event if needed
-                    if (songIdString != null) {
-                        viewModelScope.launch {
-                            EventBus.publishNavigateAwayFromDeletedSong(songIdString)
-                        }
-                    }
                 }
             }
         }

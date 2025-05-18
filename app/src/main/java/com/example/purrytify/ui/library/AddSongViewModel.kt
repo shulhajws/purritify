@@ -216,14 +216,7 @@ class AddSongViewModel(application: Application) : AndroidViewModel(application)
                     }
                 }
             } catch (e: Exception) {
-                _state.update {
-                    it.copy(
-                        isLoading = false,
-                        error = "Error deleting song: ${e.message}"
-                    )
-                }
                 Log.e("AddSongViewModel", "Error deleting song", e)
-                Toast.makeText(getApplication(), "Failed to delete the song", Toast.LENGTH_SHORT).show()
             }
         }
     }
