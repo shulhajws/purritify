@@ -14,6 +14,7 @@ import com.example.purrytify.data.AppDatabase
 import com.example.purrytify.data.mapper.SongMapper
 import com.example.purrytify.model.Song
 import com.example.purrytify.repository.SongRepository
+import com.example.purrytify.util.AudioRouteManager
 import com.example.purrytify.util.EventBus
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -45,6 +46,8 @@ class PlayerViewModel(application: Application) : AndroidViewModel(application) 
 
     private var currentUserId: Int? = null
 
+    private var audioRouteManager: AudioRouteManager? = null
+
     private var mediaPlayer: MediaPlayer? = null
     private val handler = Handler(Looper.getMainLooper())
     private val updateProgressRunnable = object : Runnable {
@@ -71,6 +74,9 @@ class PlayerViewModel(application: Application) : AndroidViewModel(application) 
         val database = AppDatabase.getDatabase(application)
         repository = SongRepository(database.songDao())
         _isLoading.value = true
+
+        // Initialize Audio Route Manager
+        audioRouteManager = AudioRouteManager(application.applicationContext)
 
         // Listen for song deletion events
         viewModelScope.launch {
@@ -366,8 +372,15 @@ class PlayerViewModel(application: Application) : AndroidViewModel(application) 
         }
     }
 
+    fun getAudioRouteManager(): AudioRouteManager? {
+        return audioRouteManager
+    }
+
     override fun onCleared() {
         super.onCleared()
         stopCurrentSong()
+
+        audioRouteManager?.cleanup()
+        audioRouteManager = null
     }
 }

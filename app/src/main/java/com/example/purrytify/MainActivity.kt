@@ -1,6 +1,9 @@
 package com.example.purrytify
 
+import android.Manifest
 import android.content.Intent
+import android.content.pm.PackageManager
+import android.os.Build
 import android.os.Bundle
 import android.util.Log
 import android.view.View
@@ -15,6 +18,8 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.ComposeView
+import androidx.core.app.ActivityCompat
+import androidx.core.content.ContextCompat
 import androidx.core.os.bundleOf
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
@@ -72,8 +77,6 @@ class MainActivity : AppCompatActivity() {
     }
 
     private suspend fun checkTokenValidity(): Boolean {
-        Log.d("MainActivity","Masuk check token validity")
-        // First check if token exists
         val token = TokenManager.getToken(this)
         Log.d("MainActivity", "Token: $token")
         if (token.isNullOrEmpty()) {
@@ -85,6 +88,50 @@ class MainActivity : AppCompatActivity() {
         return TokenManager.verifyAndRefreshTokenIfNeeded(this)
     }
 
+    companion object {
+        private const val BLUETOOTH_PERMISSION_REQUEST_CODE = 101
+    }
+
+    private fun checkBluetoothPermissions(): Boolean {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            val permissions = arrayOf(
+                Manifest.permission.BLUETOOTH_CONNECT,
+                Manifest.permission.BLUETOOTH_SCAN
+            )
+
+            val hasPermissions = permissions.all {
+                ContextCompat.checkSelfPermission(this, it) == PackageManager.PERMISSION_GRANTED
+            }
+
+            if (!hasPermissions) {
+                ActivityCompat.requestPermissions(this, permissions, BLUETOOTH_PERMISSION_REQUEST_CODE)
+                return false
+            }
+        }
+
+        return true
+    }
+
+    override fun onRequestPermissionsResult(
+        requestCode: Int,
+        permissions: Array<out String>,
+        grantResults: IntArray
+    ) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
+
+        if (requestCode == BLUETOOTH_PERMISSION_REQUEST_CODE) {
+            if (grantResults.isNotEmpty() && grantResults.all { it == PackageManager.PERMISSION_GRANTED }) {
+                playerViewModel.getAudioRouteManager()?.updateDeviceList()
+            } else {
+                Toast.makeText(
+                    this,
+                    "Bluetooth permissions are required to connect to Bluetooth audio devices",
+                    Toast.LENGTH_LONG
+                ).show()
+            }
+        }
+    }
+    
     private fun initializeApp() {
         // Fetch user profile data
         sharedViewModel.fetchUserProfile(this)
@@ -144,6 +191,8 @@ class MainActivity : AppCompatActivity() {
             )
         )
         navView.setupWithNavController(navController)
+
+        checkBluetoothPermissions()
 
         val composeView = ComposeView(this).apply {
             layoutParams = ViewGroup.LayoutParams(

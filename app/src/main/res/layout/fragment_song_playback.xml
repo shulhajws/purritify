@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="@color/black">
@@ -29,6 +30,17 @@
             android:background="?attr/selectableItemBackgroundBorderless"
             android:src="@drawable/ic_edit_pencil"
             android:contentDescription="@string/more_options" />
+
+        <ImageButton
+            android:id="@+id/btn_audio_output"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_alignParentTop="true"
+            android:layout_toStartOf="@id/btn_edit_delete_song"
+            android:layout_marginEnd="32dp"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:src="@drawable/ic_audio_output"
+            android:contentDescription="@string/audio_output" />
 
         <ImageView
             android:id="@+id/image_album"
