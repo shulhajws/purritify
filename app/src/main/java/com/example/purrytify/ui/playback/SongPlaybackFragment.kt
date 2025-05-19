@@ -19,6 +19,7 @@ import android.widget.SeekBar
 import android.widget.TextView
 import android.widget.Toast
 import androidx.core.content.ContextCompat
+import androidx.fragment.app.DialogFragment
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.activityViewModels
 import androidx.lifecycle.Lifecycle
@@ -29,6 +30,8 @@ import androidx.navigation.NavController
 import androidx.navigation.fragment.NavHostFragment
 import com.example.purrytify.R
 import com.example.purrytify.ui.shared.SharedViewModel
+import com.example.purrytify.util.AudioDevice
+import com.example.purrytify.util.AudioRouteManager
 import com.squareup.picasso.Picasso
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
@@ -39,6 +42,11 @@ class SongPlaybackFragment : Fragment() {
     private lateinit var handler: Handler
     private lateinit var viewModel: PlayerViewModel
     private val sharedViewModel: SharedViewModel by activityViewModels()
+
+    // Audio Output
+    private lateinit var audioRouteManager: AudioRouteManager
+    private lateinit var btnAudioOutput: ImageButton
+    private var currentAudioDevice: AudioDevice? = null
 
     // UI Components
     private lateinit var imageAlbum: ImageView
@@ -62,6 +70,8 @@ class SongPlaybackFragment : Fragment() {
             ViewModelProvider.AndroidViewModelFactory.getInstance(requireActivity().application)
         )[PlayerViewModel::class.java]
 
+        audioRouteManager = viewModel.getAudioRouteManager() ?: AudioRouteManager(requireContext())
+
         viewLifecycleOwner.lifecycleScope.launch {
             repeatOnLifecycle(Lifecycle.State.STARTED) {
                 sharedViewModel.globalUserProfile.collect { userProfile ->
@@ -83,23 +93,16 @@ class SongPlaybackFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
-        // Add a back button or handle system back press
         view.findViewById<ImageButton>(R.id.btn_back)?.setOnClickListener {
-            // Navigate back properly
             navController.navigateUp()
         }
-
-        // Initialize NavController
         navController = NavHostFragment.findNavController(this)
 
-        // Initialize UI components
         initializeViews(view)
 
-        // Setup loading state observer first
         viewLifecycleOwner.lifecycleScope.launch {
             viewModel.isLoading.collect { isLoading ->
                 if (isLoading) {
-                    // Maybe show a loading indicator here
                     Log.d("SongPlayback", "Waiting for songs to load...")
                 } else {
                     Log.d("SongPlayback", "Songs loaded")
@@ -107,9 +110,8 @@ class SongPlaybackFragment : Fragment() {
             }
         }
 
-        // First check permissions
+        // Playing Song
         if (checkAndRequestPermissions()) {
-            // Only try to play if permissions are granted and we have the song ID
             val songId = arguments?.getString("songId")
             songId?.let {
                 Log.d("SongPlayback", "Attempting to play song with ID: $songId")
@@ -188,7 +190,7 @@ class SongPlaybackFragment : Fragment() {
                 Log.d("SongPlayback", "Already have persistent URI permission for: $uri")
                 return true
             }
-            // If we don't have it already, try to take it
+
             val takeFlags = Intent.FLAG_GRANT_READ_URI_PERMISSION
             contentResolver.takePersistableUriPermission(uri, takeFlags)
             Log.d("SongPlayback", "Successfully took persistent URI permission for: $uri")
@@ -212,6 +214,7 @@ class SongPlaybackFragment : Fragment() {
         textTotalTime = view.findViewById(R.id.text_total_time)
         seekBar = view.findViewById(R.id.seek_bar)
         handler = Handler(Looper.getMainLooper())
+        btnAudioOutput = view.findViewById(R.id.btn_audio_output)
     }
 
     private fun setupClickListeners() {
@@ -229,6 +232,10 @@ class SongPlaybackFragment : Fragment() {
 
         btnFavorite.setOnClickListener {
             viewModel.toggleFavorite()
+        }
+
+        btnAudioOutput.setOnClickListener {
+            showAudioOutputDialog()
         }
 
         btnEditSong.setOnClickListener {
@@ -313,12 +320,43 @@ class SongPlaybackFragment : Fragment() {
                 }
             }
         }
+
+        viewLifecycleOwner.lifecycleScope.launch {
+            viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
+                audioRouteManager.currentDevice.collect { device ->
+                    currentAudioDevice = device
+                    updateAudioOutputButton()
+                }
+            }
+        }
     }
 
     private fun updateFavoriteButton(isLiked: Boolean) {
         btnFavorite.setImageResource(
             if (isLiked) R.drawable.ic_fav else R.drawable.ic_fav_border
         )
+    }
+
+    private fun showAudioOutputDialog() {
+        val dialog = AudioOutputDialog(
+            audioRouteManager = audioRouteManager,
+            onDismiss = {
+                (childFragmentManager.findFragmentByTag("AudioOutputDialog") as? DialogFragment)?.dismiss()
+            }
+        )
+
+        dialog.show(childFragmentManager, "AudioOutputDialog")
+    }
+
+    private fun updateAudioOutputButton() {
+        val iconResId = when (currentAudioDevice?.deviceType) {
+            AudioDevice.DeviceType.BLUETOOTH -> R.drawable.ic_bluetooth_audio
+            AudioDevice.DeviceType.WIRED_HEADSET -> R.drawable.ic_headset
+            AudioDevice.DeviceType.USB_AUDIO -> R.drawable.ic_usb
+            else -> R.drawable.ic_audio_output
+        }
+
+        btnAudioOutput.setImageResource(iconResId)
     }
 
     private fun navigateToEditDeleteSong(songId: String?) {
@@ -348,7 +386,6 @@ class SongPlaybackFragment : Fragment() {
 
     override fun onDestroyView() {
         super.onDestroyView()
-        Log.d("SongPlayback", "onDestroyView called")
         handler.removeCallbacksAndMessages(null)
     }
 
