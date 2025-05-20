@@ -218,14 +218,8 @@ class SongPlaybackFragment : Fragment() {
         seekBar = view.findViewById(R.id.seek_bar)
         handler = Handler(Looper.getMainLooper())
         btnAudioOutput = view.findViewById(R.id.btn_audio_output)
-
-        // Initialize the new buttons
         btnShuffle = view.findViewById(R.id.btn_shuffle)
         btnRepeat = view.findViewById(R.id.btn_repeat)
-
-        // Debug log to verify buttons are found
-        Log.d("SongPlayback", "Shuffle button: ${btnShuffle != null}")
-        Log.d("SongPlayback", "Repeat button: ${btnRepeat != null}")
     }
 
     private fun setupClickListeners() {
@@ -405,18 +399,6 @@ class SongPlaybackFragment : Fragment() {
                 if (repeatMode != RepeatMode.NO_REPEAT) R.color.spotify_green else R.color.white
             )
         )
-    }
-
-    private fun showQueueDialog() {
-        Log.d("SongPlayback", "Showing queue dialog")
-        val dialog = QueueDialog(
-            viewModel = viewModel,
-            onDismiss = {
-                (childFragmentManager.findFragmentByTag("QueueDialog") as? DialogFragment)?.dismiss()
-            }
-        )
-
-        dialog.show(childFragmentManager, "QueueDialog")
     }
 
     private fun updateNextUpText(queue: List<Song>) {

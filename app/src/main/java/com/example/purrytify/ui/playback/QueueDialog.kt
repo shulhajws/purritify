@@ -23,6 +23,7 @@ import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.DeleteSweep
 import androidx.compose.material.icons.filled.MusicNote
 import androidx.compose.material3.Divider
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -124,7 +125,7 @@ fun QueueDialogContent(
                 }
             }
 
-            Divider(modifier = Modifier.padding(vertical = 8.dp))
+            HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
 
             currentSong?.let { song ->
                 Text(
@@ -140,7 +141,7 @@ fun QueueDialogContent(
                     onRemove = null
                 )
 
-                Divider(modifier = Modifier.padding(vertical = 8.dp))
+                HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
             }
 
             Text(
@@ -177,7 +178,7 @@ fun QueueDialogContent(
                         )
 
                         if (index < queue.size - 1) {
-                            Divider(
+                            HorizontalDivider(
                                 modifier = Modifier
                                     .padding(vertical = 4.dp)
                                     .padding(start = 40.dp)
