@@ -22,10 +22,11 @@
         tools:src="@drawable/placeholder_album_art" />
 
     <LinearLayout
-        android:layout_width="match_parent"
+        android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:layout_marginStart="16dp"
         android:layout_gravity="center_vertical"
+        android:layout_weight="1"
         android:orientation="vertical">
 
         <TextView
@@ -48,4 +49,13 @@
             android:textColor="?attr/colorOnSurfaceVariant"
             tools:text="Artist Name" />
     </LinearLayout>
+
+    <ImageButton
+        android:id="@+id/btn_more"
+        android:layout_width="40dp"
+        android:layout_height="40dp"
+        android:layout_gravity="center_vertical"
+        android:background="?attr/selectableItemBackgroundBorderless"
+        android:src="@drawable/ic_more_vert"
+        android:contentDescription="@string/more_options"/>
 </LinearLayout>
