@@ -1,4 +1,3 @@
-//SongPlaybackFragment.kt
 package com.example.purrytify.ui.playback
 
 import android.Manifest
@@ -29,6 +28,7 @@ import androidx.lifecycle.repeatOnLifecycle
 import androidx.navigation.NavController
 import androidx.navigation.fragment.NavHostFragment
 import com.example.purrytify.R
+import com.example.purrytify.model.Song
 import com.example.purrytify.ui.shared.SharedViewModel
 import com.example.purrytify.util.AudioDevice
 import com.example.purrytify.util.AudioRouteManager
@@ -43,12 +43,10 @@ class SongPlaybackFragment : Fragment() {
     private lateinit var viewModel: PlayerViewModel
     private val sharedViewModel: SharedViewModel by activityViewModels()
 
-    // Audio Output
     private lateinit var audioRouteManager: AudioRouteManager
     private lateinit var btnAudioOutput: ImageButton
     private var currentAudioDevice: AudioDevice? = null
 
-    // UI Components
     private lateinit var imageAlbum: ImageView
     private lateinit var textTitle: TextView
     private lateinit var textArtist: TextView
@@ -59,6 +57,10 @@ class SongPlaybackFragment : Fragment() {
     private lateinit var btnFavorite: ImageButton
     private lateinit var textCurrentTime: TextView
     private lateinit var textTotalTime: TextView
+    private lateinit var textNextUp: TextView
+
+    private lateinit var btnShuffle: ImageButton
+    private lateinit var btnRepeat: ImageButton
 
     override fun onCreateView(
         inflater: LayoutInflater,
@@ -205,6 +207,7 @@ class SongPlaybackFragment : Fragment() {
         imageAlbum = view.findViewById(R.id.image_album)
         textTitle = view.findViewById(R.id.text_title)
         textArtist = view.findViewById(R.id.text_artist)
+        textNextUp = view.findViewById(R.id.text_next_up)
         btnPlay = view.findViewById(R.id.btn_play)
         btnNext = view.findViewById(R.id.btn_next)
         btnPrev = view.findViewById(R.id.btn_prev)
@@ -215,6 +218,8 @@ class SongPlaybackFragment : Fragment() {
         seekBar = view.findViewById(R.id.seek_bar)
         handler = Handler(Looper.getMainLooper())
         btnAudioOutput = view.findViewById(R.id.btn_audio_output)
+        btnShuffle = view.findViewById(R.id.btn_shuffle)
+        btnRepeat = view.findViewById(R.id.btn_repeat)
     }
 
     private fun setupClickListeners() {
@@ -258,6 +263,18 @@ class SongPlaybackFragment : Fragment() {
             } else {
                 Toast.makeText(requireContext(), "No song selected", Toast.LENGTH_SHORT).show()
             }
+        }
+
+        // Set up Shuffle button click listener
+        btnShuffle.setOnClickListener {
+            Log.d("SongPlayback", "Shuffle button clicked")
+            viewModel.toggleShuffle()
+        }
+
+        // Set up Repeat button click listener
+        btnRepeat.setOnClickListener {
+            Log.d("SongPlayback", "Repeat button clicked")
+            viewModel.cycleRepeatMode()
         }
     }
 
@@ -318,6 +335,27 @@ class SongPlaybackFragment : Fragment() {
                         updateFavoriteButton(isLiked)
                     }
                 }
+
+                // Observe shuffle state
+                launch {
+                    viewModel.isShuffleOn.collectLatest { isShuffleOn ->
+                        updateShuffleButton(isShuffleOn)
+                    }
+                }
+
+                // Observe repeat mode
+                launch {
+                    viewModel.repeatMode.collectLatest { repeatMode ->
+                        updateRepeatButton(repeatMode)
+                    }
+                }
+
+                // Observe queue to show next up song
+                launch {
+                    viewModel.queue.collectLatest { queue ->
+                        updateNextUpText(queue)
+                    }
+                }
             }
         }
 
@@ -328,6 +366,48 @@ class SongPlaybackFragment : Fragment() {
                     updateAudioOutputButton()
                 }
             }
+        }
+    }
+
+    private fun updateShuffleButton(isShuffleOn: Boolean) {
+        btnShuffle.setImageResource(
+            if (isShuffleOn) R.drawable.ic_shuffle_on else R.drawable.ic_shuffle
+        )
+
+        // Update tint color to show active state
+        btnShuffle.setColorFilter(
+            ContextCompat.getColor(
+                requireContext(),
+                if (isShuffleOn) R.color.spotify_green else R.color.white
+            )
+        )
+    }
+
+    private fun updateRepeatButton(repeatMode: RepeatMode) {
+        val iconRes = when (repeatMode) {
+            RepeatMode.NO_REPEAT -> R.drawable.ic_repeat
+            RepeatMode.REPEAT_ALL -> R.drawable.ic_repeat_all
+            RepeatMode.REPEAT_ONE -> R.drawable.ic_repeat_one
+        }
+
+        btnRepeat.setImageResource(iconRes)
+
+        // Update tint color to show active state
+        btnRepeat.setColorFilter(
+            ContextCompat.getColor(
+                requireContext(),
+                if (repeatMode != RepeatMode.NO_REPEAT) R.color.spotify_green else R.color.white
+            )
+        )
+    }
+
+    private fun updateNextUpText(queue: List<Song>) {
+        if (queue.isNotEmpty()) {
+            val nextSong = queue.first()
+            textNextUp.text = "Next Up: ${nextSong.title} by ${nextSong.artist}"
+            textNextUp.visibility = View.VISIBLE
+        } else {
+            textNextUp.visibility = View.GONE
         }
     }
 

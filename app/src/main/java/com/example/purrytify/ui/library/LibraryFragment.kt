@@ -7,6 +7,7 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.TextView
 import androidx.core.content.ContextCompat
+import androidx.fragment.app.DialogFragment
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.activityViewModels
 import androidx.lifecycle.Lifecycle
@@ -19,6 +20,7 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import com.example.purrytify.R
 import com.example.purrytify.databinding.FragmentLibraryBinding
 import com.example.purrytify.ui.playback.PlayerViewModel
+import com.example.purrytify.ui.playback.QueueDialog
 import com.example.purrytify.ui.shared.SharedViewModel
 import com.google.android.material.button.MaterialButton
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -86,10 +88,15 @@ class LibraryFragment : Fragment() {
         // Setup the RecyclerView
         recyclerView = contentView.findViewById<androidx.recyclerview.widget.RecyclerView>(R.id.recycler_songs)
         emptyStateTextView = contentView.findViewById(R.id.text_empty_state)
-        songAdapter = LibrarySongAdapter { song ->
-            playerViewModel.playSong(song)
-            navigateToPlayback(song.id)
-        }
+
+        songAdapter = LibrarySongAdapter(
+            onSongClick = { song ->
+                playerViewModel.playSong(song)
+                navigateToPlayback(song.id)
+            },
+            playerViewModel = playerViewModel
+        )
+
         recyclerView.apply {
             layoutManager = LinearLayoutManager(requireContext())
             adapter = songAdapter
@@ -112,6 +119,12 @@ class LibraryFragment : Fragment() {
         val btnAddSong = contentView.findViewById<View>(R.id.btn_add_song)
         btnAddSong.setOnClickListener {
             navigateToAddSong()
+        }
+
+        // Queue button
+        val btnQueue = contentView.findViewById<View>(R.id.btn_queue)
+        btnQueue.setOnClickListener {
+            showQueueDialog()
         }
 
         // Observe the songs list
@@ -173,6 +186,18 @@ class LibraryFragment : Fragment() {
             putLong("songId", -1L)
         }
         navController.navigate(R.id.action_library_to_add_song, bundle)
+    }
+
+    private fun showQueueDialog() {
+        Log.d("LibraryFragment", "Showing queue dialog")
+        val dialog = QueueDialog(
+            viewModel = playerViewModel,
+            onDismiss = {
+                (childFragmentManager.findFragmentByTag("QueueDialog") as? DialogFragment)?.dismiss()
+            }
+        )
+
+        dialog.show(childFragmentManager, "QueueDialog")
     }
 
     override fun onDestroyView() {

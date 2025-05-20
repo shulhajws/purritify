@@ -21,10 +21,28 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 import java.io.IOException
 
+enum class RepeatMode {
+    NO_REPEAT,
+    REPEAT_ALL,
+    REPEAT_ONE
+}
+
 class PlayerViewModel(application: Application) : AndroidViewModel(application) {
     private val repository: SongRepository
     private var allSongs: List<Song> = emptyList()
     private var currentIndex = 0
+
+    private val songQueue = mutableListOf<Song>()
+    private val _queue = MutableStateFlow<List<Song>>(emptyList())
+    val queue: StateFlow<List<Song>> = _queue
+    private val pendingSongRequests = ArrayDeque<String>()
+
+    private val _isShuffleOn = MutableStateFlow(false)
+    val isShuffleOn: StateFlow<Boolean> = _isShuffleOn
+    private var originalIndexes = mutableListOf<Int>()
+
+    private val _repeatMode = MutableStateFlow(RepeatMode.NO_REPEAT)
+    val repeatMode: StateFlow<RepeatMode> = _repeatMode
 
     private val _isLoading = MutableStateFlow(true)
     val isLoading: StateFlow<Boolean> = _isLoading
@@ -67,9 +85,6 @@ class PlayerViewModel(application: Application) : AndroidViewModel(application) 
         }
     }
 
-    // Queue for pending song ID requests
-    private val pendingSongRequests = ArrayDeque<String>()
-
     init {
         val database = AppDatabase.getDatabase(application)
         repository = SongRepository(database.songDao())
@@ -78,7 +93,7 @@ class PlayerViewModel(application: Application) : AndroidViewModel(application) 
         // Initialize Audio Route Manager
         audioRouteManager = AudioRouteManager(application.applicationContext)
 
-        // Listen for song deletion events
+        // Song Deletion
         viewModelScope.launch {
             EventBus.songDeletedEvents.collect { songId ->
                 Log.d("PlayerViewModel", "Song deletion event received for song ID: $songId")
@@ -90,22 +105,30 @@ class PlayerViewModel(application: Application) : AndroidViewModel(application) 
                     stopCurrentSong()
                     _currentSong.value = null
                 }
+
+                songQueue.removeAll { it.id == songId.toString() }
+                _queue.value = songQueue.toList()
             }
         }
 
-        // Listen for song update events
+        // Song Update
         viewModelScope.launch {
             EventBus.songUpdatedEvents.collect { songId ->
                 Log.d("PlayerViewModel", "Song update event received for song ID: $songId")
-                if (_currentSong.value?.id == songId.toString()) {
-                    // Currently playing song was updated, refresh its details
-                    viewModelScope.launch {
-                        repository.getSongById(songId)?.let { updatedSongEntity ->
-                            val updatedSong = SongMapper.toSong(updatedSongEntity)
-                            _currentSong.value = updatedSong
-                            _isLiked.value = updatedSong.isLiked
-                        }
-                    }
+
+                val updatedSongEntity = repository.getSongById(songId)
+                val updatedSong = updatedSongEntity?.let { SongMapper.toSong(it) } ?: return@collect
+                val songIdString = songId.toString()
+
+                if (_currentSong.value?.id == songIdString) {
+                    _currentSong.value = updatedSong
+                    _isLiked.value = updatedSong.isLiked
+                }
+
+                val queueIndex = songQueue.indexOfFirst { it.id == songIdString }
+                if (queueIndex != -1) {
+                    songQueue[queueIndex] = updatedSong
+                    _queue.value = songQueue.toList()
                 }
             }
         }
@@ -180,6 +203,7 @@ class PlayerViewModel(application: Application) : AndroidViewModel(application) 
 
         val song = allSongs.find { it.id == songId }
         if (song != null) {
+            currentIndex = allSongs.indexOfFirst { it.id == song.id }
             Log.d("PlayerViewModel", "Found song: ${song.title}")
 
             if (_currentSong.value?.id == songId && _isPlaying.value) {
@@ -191,6 +215,8 @@ class PlayerViewModel(application: Application) : AndroidViewModel(application) 
                 stopCurrentSong()
                 _currentSong.value = song
             }
+
+            clearQueue()
 
             playSong(song)
         } else {
@@ -270,7 +296,7 @@ class PlayerViewModel(application: Application) : AndroidViewModel(application) 
                     setOnCompletionListener {
                         _isPlaying.value = false
                         handler.removeCallbacks(updateProgressRunnable)
-                        playNext()
+                        handleSongCompletion()
                     }
                 } catch (e: SecurityException) {
                     Log.e("PlayerViewModel", "Security exception: ${e.message}")
@@ -290,6 +316,38 @@ class PlayerViewModel(application: Application) : AndroidViewModel(application) 
             Log.e("PlayerViewModel", "MediaPlayer creation failed: ${e.message}")
             showToast("Failed to initialize media player.")
             _isPlaying.value = false
+        }
+    }
+
+    private fun handleSongCompletion() {
+        when (_repeatMode.value) {
+            RepeatMode.REPEAT_ONE -> {
+                _currentSong.value?.let { playSong(it) }
+                return
+            }
+            RepeatMode.REPEAT_ALL -> {
+                if (songQueue.isEmpty() && currentIndex == allSongs.lastIndex) {
+                    currentIndex = 0
+                    if (allSongs.isNotEmpty()) {
+                        playSong(allSongs[currentIndex])
+                    }
+                    return
+                }
+            }
+            RepeatMode.NO_REPEAT -> {
+                if (songQueue.isEmpty() && currentIndex == allSongs.lastIndex) {
+                    stopCurrentSong()
+                    return
+                }
+            }
+        }
+
+        if (songQueue.isNotEmpty()) {
+            val nextSong = songQueue.removeAt(0)
+            _queue.value = songQueue.toList()
+            playSong(nextSong)
+        } else {
+            playNext()
         }
     }
 
@@ -314,17 +372,100 @@ class PlayerViewModel(application: Application) : AndroidViewModel(application) 
     }
 
     fun playNext() {
+        // Queue Exists
+        if (songQueue.isNotEmpty()) {
+            val nextSong = songQueue.removeAt(0)
+            _queue.value = songQueue.toList()
+            playSong(nextSong)
+            return
+        }
+
+        // No Songs
         if (allSongs.isEmpty()) return
-        currentIndex = (currentIndex + 1) % allSongs.size
-        val nextSong = allSongs[currentIndex]
-        playSong(nextSong)
+
+        // Shuffle On
+        if (_isShuffleOn.value) {
+            val originalIndex = allSongs.indexOfFirst { it.id == _currentSong.value?.id }
+            val shuffledIndex = originalIndexes.indexOf(originalIndex)
+
+            if (shuffledIndex < originalIndexes.size - 1) {
+                // Not end of shuffled list
+                val nextShuffledIndex = shuffledIndex + 1
+                val nextOriginalIndex = originalIndexes[nextShuffledIndex]
+                playSong(allSongs[nextOriginalIndex])
+            } else {
+                // End of shuffled list: reshuffle/stop
+                if (_repeatMode.value == RepeatMode.REPEAT_ALL) {
+                    shuffleIndexes()
+                    if (originalIndexes.isNotEmpty()) {
+                        val nextOriginalIndex = originalIndexes[0]
+                        playSong(allSongs[nextOriginalIndex])
+                    }
+                } else {
+                    stopCurrentSong()
+                }
+            }
+            return
+        }
+
+        // Normal
+        if (currentIndex < allSongs.size - 1) {
+            currentIndex++
+            playSong(allSongs[currentIndex])
+        // Repeat All
+        } else if (_repeatMode.value == RepeatMode.REPEAT_ALL) {
+            currentIndex = 0
+            playSong(allSongs[currentIndex])
+        } else {
+            stopCurrentSong()
+        }
     }
 
     fun playPrevious() {
         if (allSongs.isEmpty()) return
-        currentIndex = if (currentIndex - 1 < 0) allSongs.lastIndex else currentIndex - 1
-        val prevSong = allSongs[currentIndex]
-        playSong(prevSong)
+
+        if (mediaPlayer != null && mediaPlayer!!.currentPosition > 3000) {
+            mediaPlayer?.seekTo(0)
+            _currentPosition.value = 0
+            return
+        }
+
+        // Shuffle On
+        if (_isShuffleOn.value) {
+            val originalIndex = allSongs.indexOfFirst { it.id == _currentSong.value?.id }
+            val shuffledIndex = originalIndexes.indexOf(originalIndex)
+
+            if (shuffledIndex > 0) {
+                // Not beginning of shuffle list
+                val prevShuffledIndex = shuffledIndex - 1
+                val prevOriginalIndex = originalIndexes[prevShuffledIndex]
+                playSong(allSongs[prevOriginalIndex])
+            } else {
+                // Beginning of shuffled list: repeat/restart current song
+                if (_repeatMode.value == RepeatMode.REPEAT_ALL) {
+                    val lastShuffledIndex = originalIndexes.size - 1
+                    val lastOriginalIndex = originalIndexes[lastShuffledIndex]
+                    playSong(allSongs[lastOriginalIndex])
+                } else {
+                    mediaPlayer?.seekTo(0)
+                    _currentPosition.value = 0
+                }
+            }
+            return
+        }
+
+        // Normal
+        if (currentIndex > 0) {
+            currentIndex--
+            playSong(allSongs[currentIndex])
+        // Repeat All
+        } else if (_repeatMode.value == RepeatMode.REPEAT_ALL) {
+            currentIndex = allSongs.lastIndex
+            playSong(allSongs[currentIndex])
+        } else {
+            mediaPlayer?.seekTo(0)
+            _currentPosition.value = 0
+        }
     }
 
     fun seekTo(position: Int) {
@@ -370,6 +511,67 @@ class PlayerViewModel(application: Application) : AndroidViewModel(application) 
             Log.e("PlayerViewModel", "Cannot toggle favorite: No current song")
             showToast("No song is currently selected")
         }
+    }
+
+    fun addToQueue(song: Song) {
+        songQueue.add(song)
+        _queue.value = songQueue.toList()
+        showToast("Added to queue: ${song.title}")
+    }
+
+    fun addToQueueById(songId: String) {
+        if (_isLoading.value) {
+            Log.d("PlayerViewModel", "Cannot add to queue while songs are loading")
+            showToast("Cannot add to queue right now")
+            return
+        }
+
+        val song = allSongs.find { it.id == songId }
+        if (song != null) {
+            addToQueue(song)
+        } else {
+            Log.e("PlayerViewModel", "Song with ID $songId not found")
+            showToast("Song not found")
+        }
+    }
+
+    fun removeFromQueue(position: Int) {
+        if (position in 0 until songQueue.size) {
+            val removedSong = songQueue.removeAt(position)
+            _queue.value = songQueue.toList()
+            showToast("Removed from queue: ${removedSong.title}")
+        }
+    }
+
+    fun clearQueue() {
+        songQueue.clear()
+        _queue.value = emptyList()
+    }
+
+    fun toggleShuffle() {
+        val newShuffleState = !_isShuffleOn.value
+        _isShuffleOn.value = newShuffleState
+
+        if (newShuffleState) {
+            shuffleIndexes()
+        } else {
+            originalIndexes.clear()
+        }
+    }
+
+    private fun shuffleIndexes() {
+        originalIndexes = List(allSongs.size) { it }.shuffled().toMutableList()
+        Log.d("PlayerViewModel", "Shuffled indexes: $originalIndexes")
+    }
+
+    fun cycleRepeatMode() {
+        val currentMode = _repeatMode.value
+        val nextMode = when (currentMode) {
+            RepeatMode.NO_REPEAT -> RepeatMode.REPEAT_ALL
+            RepeatMode.REPEAT_ALL -> RepeatMode.REPEAT_ONE
+            RepeatMode.REPEAT_ONE -> RepeatMode.NO_REPEAT
+        }
+        _repeatMode.value = nextMode
     }
 
     fun getAudioRouteManager(): AudioRouteManager? {

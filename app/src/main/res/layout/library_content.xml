@@ -49,6 +49,15 @@
         </LinearLayout>
 
         <ImageButton
+            android:id="@+id/btn_queue"
+            android:layout_width="48dp"
+            android:layout_height="48dp"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:contentDescription="@string/queue"
+            android:src="@drawable/ic_queue"
+            app:tint="@android:color/white" />
+
+        <ImageButton
             android:id="@+id/btn_add_song"
             android:layout_width="48dp"
             android:layout_height="48dp"
