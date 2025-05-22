@@ -14,7 +14,11 @@ data class SongEntity(
     var filePath: String,
     var artworkPath: String? = null,
     var uploadedAt: Date,
+    var updatedAt: Date? = null,
     var lastPlayedAt: Date? = null,
     var isLiked: Boolean = false,
-    var isListened: Boolean = false
+    var isListened: Boolean = false,
+    var rank: Int? = null,
+    var country: String? = null,
+    var isFromServer: Boolean = false,
 )

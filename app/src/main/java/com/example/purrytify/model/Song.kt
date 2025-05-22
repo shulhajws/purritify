@@ -14,6 +14,10 @@ data class Song(
     val isLiked: Boolean,
     val isListened: Boolean,
     val uploadedAt: Date,
+    val updatedAt: Date? = null,
     val lastPlayedAt: Date? = null,
-    val isPlaying: Boolean = false
+    val rank: Int? = null,
+    val country: String? = null,
+    val isPlaying: Boolean = false,
+    val isFromServer: Boolean = false
 ) : Parcelable
