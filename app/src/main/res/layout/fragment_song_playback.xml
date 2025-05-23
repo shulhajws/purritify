@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="@color/black">
@@ -9,6 +10,37 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:padding="24dp">
+
+        <ImageButton
+            android:id="@+id/btn_back"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_alignParentTop="true"
+            android:layout_alignParentStart="true"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:src="@drawable/ic_arrow_back"
+            android:contentDescription="@string/back_button" />
+
+        <ImageButton
+            android:id="@+id/btn_edit_delete_song"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_alignParentTop="true"
+            android:layout_alignParentEnd="true"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:src="@drawable/ic_edit_pencil"
+            android:contentDescription="@string/more_options" />
+
+        <ImageButton
+            android:id="@+id/btn_audio_output"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_alignParentTop="true"
+            android:layout_toStartOf="@id/btn_edit_delete_song"
+            android:layout_marginEnd="32dp"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:src="@drawable/ic_audio_output"
+            android:contentDescription="@string/audio_output" />
 
         <ImageView
             android:id="@+id/image_album"
@@ -35,7 +67,17 @@
             android:layout_below="@id/text_title"
             android:textSize="16sp"
             android:textColor="@android:color/white"
-            android:layout_marginBottom="8dp"/>
+            android:layout_marginBottom="4dp"/>
+
+        <TextView
+            android:id="@+id/text_next_up"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_below="@id/text_artist"
+            android:textSize="14sp"
+            android:textColor="@color/soft_gray"
+            android:layout_marginBottom="8dp"
+            android:visibility="gone"/>
 
         <ImageButton
             android:id="@+id/btn_favorite"
@@ -77,13 +119,21 @@
 
         <LinearLayout
             android:id="@+id/layout_controls"
-            android:layout_width="wrap_content"
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_below="@id/text_total_time"
-            android:layout_centerHorizontal="true"
             android:layout_marginTop="24dp"
             android:orientation="horizontal"
             android:gravity="center">
+
+            <ImageButton
+                android:id="@+id/btn_shuffle"
+                android:layout_width="32dp"
+                android:layout_height="32dp"
+                android:background="@android:color/transparent"
+                android:src="@drawable/ic_shuffle"
+                android:contentDescription="@string/shuffle"
+                android:layout_marginEnd="16dp" />
 
             <ImageButton
                 android:id="@+id/btn_prev"
@@ -102,11 +152,7 @@
                 android:background="@android:color/transparent"
                 android:src="@drawable/ic_play"
                 android:scaleType="centerInside"
-                android:contentDescription="@string/play_pause"
-                app:layout_constraintTop_toTopOf="parent"
-                app:layout_constraintBottom_toBottomOf="parent"
-                app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintEnd_toEndOf="parent"/>
+                android:contentDescription="@string/play_pause" />
 
             <ImageButton
                 android:id="@+id/btn_next"
@@ -115,6 +161,15 @@
                 android:background="@android:color/transparent"
                 android:src="@drawable/ic_next"
                 android:contentDescription="@string/next" />
+
+            <ImageButton
+                android:id="@+id/btn_repeat"
+                android:layout_width="32dp"
+                android:layout_height="32dp"
+                android:background="@android:color/transparent"
+                android:src="@drawable/ic_repeat"
+                android:contentDescription="@string/repeat"
+                android:layout_marginStart="16dp" />
         </LinearLayout>
     </RelativeLayout>
 </ScrollView>

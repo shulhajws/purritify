@@ -10,13 +10,17 @@ object SongMapper {
             id = entity.id.toString(),
             title = entity.title,
             artist = entity.artist,
-            albumArt = entity.artworkPath ?: "https://picsum.photos/200/200?random=${entity.id}", // Fallback if no artwork
+            albumArt = entity.artworkPath ?: "https://picsum.photos/200/200?random=${entity.id/3}",
             audioUrl = entity.filePath,
             isLiked = entity.isLiked,
             isListened = entity.isListened,
             uploadedAt = entity.uploadedAt,
+            updatedAt = entity.updatedAt,
             lastPlayedAt = entity.lastPlayedAt,
-            isPlaying = false
+            rank = entity.rank,
+            country = entity.country,
+            isPlaying = false,
+            isFromServer = entity.isFromServer
         )
     }
 
@@ -30,12 +34,15 @@ object SongMapper {
             filePath = song.audioUrl,
             artworkPath = song.albumArt,
             uploadedAt = Date(System.currentTimeMillis()),
+            updatedAt = song.updatedAt,
             lastPlayedAt = null,
             isLiked = false,
-            isListened = false
+            isListened = false,
+            rank = song.rank,
+            country = song.country,
+            isFromServer = song.isFromServer
         )
     }
-
 
     fun toSongList(entities: List<SongEntity>): List<Song> {
         return entities.map { toSong(it) }

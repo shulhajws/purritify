@@ -36,14 +36,24 @@
             app:popUpTo="@id/navigation_library"
             app:enterAnim="@android:anim/slide_in_left"
             app:exitAnim="@android:anim/slide_out_right"/>
+
+        <action
+            android:id="@+id/action_library_to_playback"
+            app:destination="@id/navigation_song_playback"
+            app:enterAnim="@android:anim/fade_in"
+            app:exitAnim="@android:anim/fade_out">
+            <argument android:name="songId" app:argType="string" />
+        </action>
     </fragment>
 
+    <!-- Profile -->
     <fragment
         android:id="@+id/navigation_profile"
         android:name="com.example.purrytify.ui.profile.ProfileFragment"
         android:label="@string/title_profile"
         tools:layout="@layout/fragment_profile" />
 
+    <!-- Song Playback -->
     <fragment
         android:id="@+id/navigation_song_playback"
         android:name="com.example.purrytify.ui.playback.SongPlaybackFragment"
@@ -51,8 +61,33 @@
         <argument
             android:name="songId"
             app:argType="string" />
+
+        <action
+            android:id="@+id/action_song_playback_to_edit_delete_song"
+            app:destination="@id/navigation_add_song"
+            app:popUpTo="@id/navigation_song_playback"
+            app:enterAnim="@android:anim/slide_in_left"
+            app:exitAnim="@android:anim/slide_out_right"/>
+
+        <!-- Add these back navigation actions -->
+        <action
+            android:id="@+id/action_song_playback_to_home"
+            app:destination="@id/navigation_home"
+            app:popUpTo="@id/navigation_home"
+            app:popUpToInclusive="true"
+            app:enterAnim="@android:anim/fade_in"
+            app:exitAnim="@android:anim/fade_out" />
+
+        <action
+            android:id="@+id/action_song_playback_to_library"
+            app:destination="@id/navigation_library"
+            app:popUpTo="@id/navigation_library"
+            app:popUpToInclusive="true"
+            app:enterAnim="@android:anim/fade_in"
+            app:exitAnim="@android:anim/fade_out" />
     </fragment>
 
+    <!-- Add Song -->
     <fragment
         android:id="@+id/navigation_add_song"
         android:name="com.example.purrytify.ui.library.AddSongFragment"

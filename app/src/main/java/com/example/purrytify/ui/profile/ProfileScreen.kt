@@ -22,8 +22,6 @@ import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -32,25 +30,22 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import coil.compose.rememberAsyncImagePainter
+import com.example.purrytify.model.UserProfile
 import com.example.purrytify.ui.login.LoginActivity
 import com.example.purrytify.ui.theme.DarkBlack
-import com.example.purrytify.ui.theme.DarkGray
 import com.example.purrytify.ui.theme.SoftGray
 import com.example.purrytify.ui.theme.White
 import com.example.purrytify.util.TokenManager
 
-
 @Composable
-fun ProfileScreen(viewModel: ProfileViewModel) {
-    val userProfile by viewModel.userProfile.collectAsState()
-    val songsCount by viewModel.songsCount.collectAsState()
-    val likedCount by viewModel.likedCount.collectAsState()
-    val listenedCount by viewModel.listenedCount.collectAsState()
-
-//    val buttonColor = DarkGray    // Uncomment this line to use DarkGray
+fun ProfileScreen(
+    userProfile: UserProfile,
+    songsCount: Int = 0,
+    likedCount: Int = 0,
+    listenedCount: Int = 0
+) {
     val textColor = White
     val secondaryTextColor = SoftGray
     val topColor = Color(0xFF00667B)
@@ -73,120 +68,115 @@ fun ProfileScreen(viewModel: ProfileViewModel) {
                 .padding(16.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            userProfile?.let { profile ->
-                Box(
+            Box(
+                modifier = Modifier
+                    .padding(top = 48.dp)
+            ) {
+                Image(
+                    painter = rememberAsyncImagePainter(model = userProfile.profilePhoto),
+                    contentDescription = "Profile picture",
+                    contentScale = ContentScale.Crop,
                     modifier = Modifier
-                        .padding(top = 48.dp)
-                ) {
-                    Image(
-                        painter = rememberAsyncImagePainter(model = profile.profilePhoto),
-                        contentDescription = "Profile picture",
-                        contentScale = ContentScale.Crop,
-                        modifier = Modifier
-                            .size(140.dp)
-                            .clip(CircleShape)
-                    )
-                }
-
-                Spacer(modifier = Modifier.height(16.dp))
-
-                // Display all of the information that UserProfile had
-
-                // Username
-                Text(
-                    text = profile.username,
-                    style = MaterialTheme.typography.headlineMedium,
-                    color = textColor
+                        .size(140.dp)
+                        .clip(CircleShape)
                 )
+            }
 
-                // Location
+            Spacer(modifier = Modifier.height(16.dp))
+
+            // Display all of the information that UserProfile had
+            // Username
+            Text(
+                text = userProfile.username,
+                style = MaterialTheme.typography.headlineMedium,
+                color = textColor
+            )
+
+            // Location
+            Text(
+                text = userProfile.location,
+                style = MaterialTheme.typography.bodyMedium,
+                color = secondaryTextColor
+            )
+
+            // Email
+            Text(
+                text = userProfile.email,
+                style = MaterialTheme.typography.bodyMedium,
+                color = secondaryTextColor
+            )
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            // Created At
+            Text(
+                text = "Account Created at: ${userProfile.createdAt}",
+                style = MaterialTheme.typography.bodySmall,
+                color = secondaryTextColor
+            )
+
+            // Updated At
+            Text(
+                text = "Account Updated at: ${userProfile.updatedAt}",
+                style = MaterialTheme.typography.bodySmall,
+                color = secondaryTextColor
+            )
+
+            Spacer(modifier = Modifier.height(24.dp))
+
+            // Logout Button
+            val context = LocalContext.current
+            Button(
+                onClick = {
+                    // Clear the token
+                    TokenManager.clearToken(context)
+                    // Navigate to LoginActivity
+                    val intent = Intent(context, LoginActivity::class.java)
+                    context.startActivity(intent)
+                    // Toast message
+                    Toast.makeText(context, "Logged out successfully", Toast.LENGTH_SHORT).show()
+                    // Finish current activity "if needed"
+                    (context as? Activity)?.finish()
+                },
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = Color.Red
+                ),
+                shape = RoundedCornerShape(percent = 50),
+                modifier = Modifier
+                    .fillMaxWidth(0.5f)
+                    .height(48.dp)
+            ) {
                 Text(
-                    text = profile.location,
+                    text = "Logout",
                     style = MaterialTheme.typography.bodyMedium,
-                    color = secondaryTextColor
+                    color = White
+                )
+            }
+
+            Spacer(modifier = Modifier.height(48.dp))
+
+            // Stats Row - Now using real data from database
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceEvenly
+            ) {
+                // Songs Count
+                StatItem(
+                    count = songsCount,
+                    label = "SONGS"
                 )
 
-                // Email
-                Text(
-                    text = profile.email,
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = secondaryTextColor
-                )
-                Spacer(modifier = Modifier.height(8.dp))
-
-                // Created At
-                Text(
-                    text = "Account Created at: ${profile.createdAt}",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = secondaryTextColor
+                // Liked Count
+                StatItem(
+                    count = likedCount,
+                    label = "LIKED"
                 )
 
-                // Updated At
-                Text(
-                    text = "Account Updated at: ${profile.updatedAt}",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = secondaryTextColor
+                // Listened Count
+                StatItem(
+                    count = listenedCount,
+                    label = "LISTENED"
                 )
-
-                Spacer(modifier = Modifier.height(24.dp))
-
-                // Logout Button
-                val context = LocalContext.current
-                Button(
-                    onClick = {
-                        // Clear the token
-                        TokenManager.clearToken(context)
-
-                        // Navigate to LoginActivity
-                        val intent = Intent(context, LoginActivity::class.java)
-                        context.startActivity(intent)
-
-                        // Toast message
-                        Toast.makeText(context, "Logged out successfully", Toast.LENGTH_SHORT).show()
-
-                        // Finish current activity "if needed"
-                        (context as? Activity)?.finish()
-                    },
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = Color.Red
-                    ),
-                    shape = RoundedCornerShape(percent = 50),
-                    modifier = Modifier
-                        .fillMaxWidth(0.5f)
-                        .height(48.dp)
-                ) {
-                    Text(
-                        text = "Logout",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = White
-                    )
-                }
-
-                Spacer(modifier = Modifier.height(48.dp))
-
-                // Stats Row
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceEvenly
-                ) {
-                    // Songs Count
-                    StatItem(
-                        count = songsCount,
-                        label = "SONGS"
-                    )
-
-                    // Liked Count
-                    StatItem(
-                        count = likedCount,
-                        label = "LIKED"
-                    )
-
-                    // Listened Count
-                    StatItem(
-                        count = listenedCount,
-                        label = "LISTENED"
-                    )
-                }
             }
         }
     }

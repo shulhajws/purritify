@@ -1,20 +1,27 @@
 package com.example.purrytify.ui.library
 
 import android.os.Bundle
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.TextView
 import androidx.core.content.ContextCompat
+import androidx.fragment.app.DialogFragment
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.activityViewModels
+import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.lifecycleScope
+import androidx.lifecycle.repeatOnLifecycle
 import androidx.navigation.NavController
 import androidx.navigation.fragment.NavHostFragment
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.example.purrytify.R
 import com.example.purrytify.databinding.FragmentLibraryBinding
 import com.example.purrytify.ui.playback.PlayerViewModel
+import com.example.purrytify.ui.playback.QueueDialog
+import com.example.purrytify.ui.shared.SharedViewModel
 import com.google.android.material.button.MaterialButton
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.flatMapLatest
@@ -27,6 +34,9 @@ class LibraryFragment : Fragment() {
     private lateinit var navController: NavController
     private lateinit var songAdapter: LibrarySongAdapter
     private val playerViewModel: PlayerViewModel by activityViewModels()
+    private val sharedViewModel: SharedViewModel by activityViewModels()
+    private lateinit var emptyStateTextView: TextView
+    private lateinit var recyclerView: androidx.recyclerview.widget.RecyclerView
 
     override fun onCreateView(
         inflater: LayoutInflater,
@@ -39,6 +49,22 @@ class LibraryFragment : Fragment() {
         )[LibraryViewModel::class.java]
         _binding = FragmentLibraryBinding.inflate(inflater, container, false)
         binding.fragmentHeaderTitle.text = getString(R.string.title_library)
+
+        viewLifecycleOwner.lifecycleScope.launch {
+            repeatOnLifecycle(Lifecycle.State.STARTED) {
+                sharedViewModel.globalUserProfile.collect { userProfile ->
+                    userProfile?.let { profile ->
+                        try {
+                            val userId = profile.id.toInt()
+                            libraryViewModel.updateForUser(userId)
+                        } catch (e: NumberFormatException) {
+                            Log.e("LibraryFragment", "Invalid user ID format: ${profile.id}")
+                        }
+                    }
+                }
+            }
+        }
+
         return binding.root
     }
 
@@ -58,12 +84,19 @@ class LibraryFragment : Fragment() {
         (binding.root as ViewGroup).addView(contentView,
             binding.root.indexOfChild(binding.fragmentHeaderTitle) + 1)
 
+
         // Setup the RecyclerView
-        val recyclerView = contentView.findViewById<androidx.recyclerview.widget.RecyclerView>(R.id.recycler_songs)
-        songAdapter = LibrarySongAdapter { song ->
-            playerViewModel.playSong(song)
-            navigateToPlayback(song.id)
-        }
+        recyclerView = contentView.findViewById<androidx.recyclerview.widget.RecyclerView>(R.id.recycler_songs)
+        emptyStateTextView = contentView.findViewById(R.id.text_empty_state)
+
+        songAdapter = LibrarySongAdapter(
+            onSongClick = { song ->
+                playerViewModel.playSong(song)
+                navigateToPlayback(song.id)
+            },
+            playerViewModel = playerViewModel
+        )
+
         recyclerView.apply {
             layoutManager = LinearLayoutManager(requireContext())
             adapter = songAdapter
@@ -88,6 +121,12 @@ class LibraryFragment : Fragment() {
             navigateToAddSong()
         }
 
+        // Queue button
+        val btnQueue = contentView.findViewById<View>(R.id.btn_queue)
+        btnQueue.setOnClickListener {
+            showQueueDialog()
+        }
+
         // Observe the songs list
         viewLifecycleOwner.lifecycleScope.launch {
             libraryViewModel.selectedTab
@@ -97,6 +136,20 @@ class LibraryFragment : Fragment() {
                 }
                 .collect { songs ->
                     songAdapter.submitList(songs)
+
+                    if (songs.isEmpty()) {
+                        val emptyMessage = if (libraryViewModel.selectedTab.value == 0) {
+                            "No songs in library"
+                        } else {
+                            "No liked songs"
+                        }
+                        emptyStateTextView.text = emptyMessage
+                        emptyStateTextView.visibility = View.VISIBLE
+                        recyclerView.visibility = View.GONE
+                    } else {
+                        emptyStateTextView.visibility = View.GONE
+                        recyclerView.visibility = View.VISIBLE
+                    }
                 }
         }
 
@@ -123,7 +176,7 @@ class LibraryFragment : Fragment() {
 
     private fun navigateToPlayback(songId: String) {
         val bundle = Bundle().apply {
-            putString("song_id", songId)
+            putString("songId", songId)
         }
         navController.navigate(R.id.navigation_song_playback, bundle)
     }
@@ -133,6 +186,18 @@ class LibraryFragment : Fragment() {
             putLong("songId", -1L)
         }
         navController.navigate(R.id.action_library_to_add_song, bundle)
+    }
+
+    private fun showQueueDialog() {
+        Log.d("LibraryFragment", "Showing queue dialog")
+        val dialog = QueueDialog(
+            viewModel = playerViewModel,
+            onDismiss = {
+                (childFragmentManager.findFragmentByTag("QueueDialog") as? DialogFragment)?.dismiss()
+            }
+        )
+
+        dialog.show(childFragmentManager, "QueueDialog")
     }
 
     override fun onDestroyView() {

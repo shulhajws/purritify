@@ -49,6 +49,15 @@
         </LinearLayout>
 
         <ImageButton
+            android:id="@+id/btn_queue"
+            android:layout_width="48dp"
+            android:layout_height="48dp"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:contentDescription="@string/queue"
+            android:src="@drawable/ic_queue"
+            app:tint="@android:color/white" />
+
+        <ImageButton
             android:id="@+id/btn_add_song"
             android:layout_width="48dp"
             android:layout_height="48dp"
@@ -64,6 +73,17 @@
         android:layout_marginBottom="16dp"
         android:alpha="0.5"
         android:background="?attr/colorSurfaceVariant" />
+
+    <TextView
+        android:id="@+id/text_empty_state"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:gravity="center"
+        android:textColor="@color/on_surface"
+        android:alpha="0.7"
+        android:textSize="16sp"
+        android:text="No songs in library"
+        android:visibility="gone" />
 
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/recycler_songs"

@@ -1,18 +1,18 @@
 package com.example.purrytify.ui.library
 
 import android.app.Application
-import android.content.ContentResolver
 import android.content.Context
 import android.media.MediaMetadataRetriever
 import android.net.Uri
-import android.provider.MediaStore
 import android.provider.OpenableColumns
 import android.util.Log
+import android.widget.Toast
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.purrytify.data.AppDatabase
 import com.example.purrytify.data.entity.SongEntity
 import com.example.purrytify.repository.SongRepository
+import com.example.purrytify.util.EventBus
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -37,14 +37,19 @@ data class AddSongState(
 )
 
 class AddSongViewModel(application: Application) : AndroidViewModel(application) {
-
     private val repository: SongRepository
     private val _state = MutableStateFlow(AddSongState())
     val state: StateFlow<AddSongState> = _state.asStateFlow()
 
+    private var currentUserId: Int? = null
+
     init {
         val songDao = AppDatabase.getDatabase(application).songDao()
         repository = SongRepository(songDao)
+    }
+
+    fun updateCurrentUserId(userId: Int) {
+        currentUserId = userId
     }
 
     fun loadSongData(songId: Long) {
@@ -66,13 +71,15 @@ class AddSongViewModel(application: Application) : AndroidViewModel(application)
                             artworkUri = if (song.artworkPath != null) Uri.parse(song.artworkPath) else null,
                             songFileName = getFileNameFromUri(getApplication(), Uri.parse(song.filePath)),
                             editMode = true,
-                            isLoading = false
+                            isLoading = false,
+                            uploadedAt = song.uploadedAt
                         )
                     }
                 }
             } catch (e: Exception) {
                 _state.update { it.copy(error = "Error loading song: ${e.message}", isLoading = false) }
                 Log.e("AddSongViewModel", "Error loading song", e)
+                Toast.makeText(getApplication(), "Failed when loading the song", Toast.LENGTH_SHORT).show()
             }
         }
     }
@@ -100,26 +107,19 @@ class AddSongViewModel(application: Application) : AndroidViewModel(application)
         try {
             val fileName = getFileNameFromUri(getApplication(), uri)
             _state.update { it.copy(songFileName = fileName) }
-
             val retriever = MediaMetadataRetriever()
-            retriever.setDataSource(getApplication<Application>(), uri)
+            retriever.setDataSource(getApplication(), uri)
 
-            // Extract duration
             val durationStr = retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_DURATION)
             val duration = durationStr?.toLong() ?: 0
 
-            // Extract title if available
             val extractedTitle = retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_TITLE)
-            val title = if (!extractedTitle.isNullOrEmpty() && _state.value.title.isEmpty())
-                extractedTitle else _state.value.title
+            val title = if (!extractedTitle.isNullOrEmpty()) extractedTitle else fileName
 
-            // Extract artist if available
             val extractedArtist = retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_ARTIST)
-            val artist = if (!extractedArtist.isNullOrEmpty() && _state.value.artist.isEmpty())
-                extractedArtist else _state.value.artist
+            val artist = if (!extractedArtist.isNullOrEmpty()) extractedArtist else "Unknown Artist"
 
             retriever.release()
-
             _state.update {
                 it.copy(
                     songDuration = duration,
@@ -130,6 +130,7 @@ class AddSongViewModel(application: Application) : AndroidViewModel(application)
         } catch (e: Exception) {
             _state.update { it.copy(error = "Error extracting metadata: ${e.message}") }
             Log.e("AddSongViewModel", "Error extracting metadata", e)
+            Toast.makeText(getApplication(), "Failed to extract song's metadata", Toast.LENGTH_SHORT).show()
         }
     }
 
@@ -141,13 +142,18 @@ class AddSongViewModel(application: Application) : AndroidViewModel(application)
             return
         }
 
+        if (currentUserId == null) {
+            _state.update { it.copy(error = "User not logged in") }
+            return
+        }
+
         _state.update { it.copy(isLoading = true) }
 
         viewModelScope.launch {
             try {
                 val song = SongEntity(
                     id = if (currentState.editMode) currentState.songId else 0,
-                    userId = 0, //TODO: Set proper userId
+                    userId = currentUserId!!,
                     title = currentState.title,
                     artist = currentState.artist,
                     duration = currentState.songDuration,
@@ -158,6 +164,7 @@ class AddSongViewModel(application: Application) : AndroidViewModel(application)
 
                 if (currentState.editMode) {
                     repository.update(song)
+                    EventBus.publishSongUpdated(song.id)
                 } else {
                     repository.insert(song)
                 }
@@ -177,6 +184,7 @@ class AddSongViewModel(application: Application) : AndroidViewModel(application)
                     )
                 }
                 Log.e("AddSongViewModel", "Error saving song", e)
+                Toast.makeText(getApplication(), "Failed to save the song", Toast.LENGTH_SHORT).show()
             }
         }
     }
@@ -194,7 +202,11 @@ class AddSongViewModel(application: Application) : AndroidViewModel(application)
             try {
                 val song = repository.getSongById(currentState.songId)
                 song?.let {
+                    val songId = it.id
                     repository.delete(it)
+
+                    EventBus.publishSongDeleted(songId)
+
                     _state.update { state ->
                         state.copy(
                             isLoading = false,
@@ -204,12 +216,6 @@ class AddSongViewModel(application: Application) : AndroidViewModel(application)
                     }
                 }
             } catch (e: Exception) {
-                _state.update {
-                    it.copy(
-                        isLoading = false,
-                        error = "Error deleting song: ${e.message}"
-                    )
-                }
                 Log.e("AddSongViewModel", "Error deleting song", e)
             }
         }
