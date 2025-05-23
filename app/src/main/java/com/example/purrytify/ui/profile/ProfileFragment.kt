@@ -33,6 +33,7 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
+import androidx.navigation.NavController
 import com.example.purrytify.R
 import com.example.purrytify.databinding.FragmentProfileBinding
 import com.example.purrytify.ui.login.LoginActivity
@@ -46,7 +47,15 @@ import kotlinx.coroutines.launch
 class ProfileFragment : Fragment() {
     private var _binding: FragmentProfileBinding? = null
     private val binding get() = _binding!!
-    private lateinit var profileViewModel: ProfileViewModel // TODO: Potentially unused
+    private lateinit var profileViewModel: ProfileViewModel
+    private lateinit var navController: NavController
+    private val soundCapsuleViewModel: SoundCapsuleViewModel by lazy {
+        ViewModelProvider(
+            requireActivity(),
+            ViewModelProvider.AndroidViewModelFactory.getInstance(requireActivity().application)
+        )[SoundCapsuleViewModel::class.java]
+    }
+
 
     private val sharedViewModel: SharedViewModel by lazy {
         ViewModelProvider(requireActivity())[SharedViewModel::class.java]
@@ -150,7 +159,7 @@ class ProfileFragment : Fragment() {
                             }
                         }
                     } else {
-                        Log.d("ProfileFragment", "Shulha  debug masuk internet")
+                        Log.d("ProfileFragment", "Debug currentUserProfile: internet connection available")
                         // Get global user profile from SharedViewModel
                         val userProfile = sharedViewModel.globalUserProfile.collectAsState().value
                         Log.d("ProfileFragment",  "Debug currentUserProfile: $userProfile")
@@ -184,12 +193,35 @@ class ProfileFragment : Fragment() {
                                 userProfile = it,
                                 songsCount = songsCount,
                                 likedCount = likedCount,
-                                listenedCount = listenedCount
+                                listenedCount = listenedCount,
+                                soundCapsuleViewModel = soundCapsuleViewModel,
+                                onSoundCapsuleNavigation = { screen, monthYear ->
+                                    navigateToSoundCapsuleScreen(screen, monthYear)
+                                }
                             )
                         }
                     }
                 }
             }
+        }
+    }
+
+    private fun navigateToSoundCapsuleScreen(screen: String, monthYear: com.example.purrytify.repository.MonthYear) {
+        val bundle = Bundle().apply {
+            putInt("year", monthYear.year)
+            putInt("month", monthYear.month)
+        }
+
+        try {
+            when (screen) {
+                "time_listened" -> navController.navigate(R.id.navigation_sound_capsule_time_listened, bundle)
+                "top_artists" -> navController.navigate(R.id.navigation_sound_capsule_top_artists, bundle)
+                "top_songs" -> navController.navigate(R.id.navigation_sound_capsule_top_songs, bundle)
+                else -> Log.w("ProfileFragment", "Unknown sound capsule screen: $screen")
+            }
+        } catch (e: Exception) {
+            Log.e("ProfileFragment", "Error navigating to sound capsule screen: ${e.message}")
+            Toast.makeText(requireContext(), "Navigation error", Toast.LENGTH_SHORT).show()
         }
     }
 
