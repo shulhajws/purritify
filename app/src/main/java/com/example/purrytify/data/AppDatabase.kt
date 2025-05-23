@@ -21,17 +21,20 @@ val MIGRATION_2_3 = object : Migration(2, 3) {
     }
 }
 
-val MIGRATION_3_4 = object : Migration(3, 4) {
+val MIGRATION_4_5 = object : Migration(4, 5) {
     override fun migrate(db: SupportSQLiteDatabase) {
+        db.execSQL("DROP TABLE IF EXISTS `listening_sessions`")
+
+        // Create Listening Sessions Table For Analytics
         db.execSQL("""
-            CREATE TABLE IF NOT EXISTS `listening_sessions` (
+            CREATE TABLE `listening_sessions` (
                 `id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
                 `userId` INTEGER NOT NULL,
                 `songId` INTEGER NOT NULL,
                 `startTime` INTEGER NOT NULL,
                 `endTime` INTEGER,
-                `actualListenDurationMs` INTEGER NOT NULL DEFAULT 0,
-                `wasCompleted` INTEGER NOT NULL DEFAULT 0,
+                `actualListenDurationMs` INTEGER NOT NULL,
+                `wasCompleted` INTEGER NOT NULL,
                 `year` INTEGER NOT NULL,
                 `month` INTEGER NOT NULL,
                 `dayOfMonth` INTEGER NOT NULL,
@@ -39,28 +42,29 @@ val MIGRATION_3_4 = object : Migration(3, 4) {
             )
         """)
 
+        // Create Indices For Better Query Performance
         db.execSQL("""
-            CREATE INDEX IF NOT EXISTS `index_listening_sessions_userId` 
+            CREATE INDEX `index_listening_sessions_userId` 
             ON `listening_sessions` (`userId`)
         """)
 
         db.execSQL("""
-            CREATE INDEX IF NOT EXISTS `index_listening_sessions_songId` 
+            CREATE INDEX `index_listening_sessions_songId` 
             ON `listening_sessions` (`songId`)
         """)
 
         db.execSQL("""
-            CREATE INDEX IF NOT EXISTS `index_listening_sessions_year_month` 
+            CREATE INDEX `index_listening_sessions_year_month` 
             ON `listening_sessions` (`userId`, `year`, `month`)
         """)
 
         db.execSQL("""
-            CREATE INDEX IF NOT EXISTS `index_listening_sessions_dateString` 
+            CREATE INDEX `index_listening_sessions_dateString` 
             ON `listening_sessions` (`userId`, `dateString`)
         """)
 
         db.execSQL("""
-            CREATE INDEX IF NOT EXISTS `index_listening_sessions_active` 
+            CREATE INDEX `index_listening_sessions_active` 
             ON `listening_sessions` (`userId`, `endTime`)
         """)
     }
@@ -68,7 +72,7 @@ val MIGRATION_3_4 = object : Migration(3, 4) {
 
 @Database(
     entities = [SongEntity::class, ListeningSessionEntity::class],
-    version = 4,
+    version = 5,
     exportSchema = false
 )
 @TypeConverters(Converters::class)
@@ -87,7 +91,7 @@ abstract class AppDatabase : RoomDatabase() {
                     AppDatabase::class.java,
                     "purrytify_database"
                 )
-                    .addMigrations(MIGRATION_2_3, MIGRATION_3_4)
+                    .addMigrations(MIGRATION_2_3, MIGRATION_4_5)
                     .fallbackToDestructiveMigration()
                     .build()
                 INSTANCE = instance
