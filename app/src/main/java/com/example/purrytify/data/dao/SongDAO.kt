@@ -44,4 +44,18 @@ interface SongDao {
 
     @Query("SELECT COUNT(*) FROM songs WHERE userId = :userId AND isListened = 1")
     fun getListenedSongsCountByUserId(userId: Int): Flow<Int>
+
+    @Query("""
+    SELECT s.id, s.title, s.artist, s.artworkPath
+    FROM songs s
+    WHERE s.id IN (:songIds)
+    """)
+    suspend fun getSongsByIds(songIds: List<Long>): List<SongBasicData>
 }
+
+data class SongBasicData(
+    val id: Long,
+    val title: String,
+    val artist: String,
+    val artworkPath: String?
+)
