@@ -112,5 +112,8 @@ dependencies {
     // WorkManager dependency for periodic background tasks and ensures the task runs even if the app is closed
     implementation("androidx.work:work-runtime-ktx:2.8.1")
 
+    // Google Play Services Location for location access
+    implementation("com.google.android.gms:play-services-location:21.0.1")
+
     debugImplementation("androidx.compose.ui:ui-tooling:$compose_version")
 }
