@@ -108,17 +108,6 @@ fun ProfileScreen(
 
                 Spacer(modifier = Modifier.height(8.dp))
 
-                Text(
-                    text = "Account Created at: ${userProfile.createdAt}",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = secondaryTextColor
-                )
-
-                Text(
-                    text = "Account Updated at: ${userProfile.updatedAt}",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = secondaryTextColor
-                )
 
                 Spacer(modifier = Modifier.height(24.dp))
 
