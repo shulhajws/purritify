@@ -37,10 +37,12 @@ class HomeFragment : Fragment() {
         container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View {
-        homeViewModel = ViewModelProvider(
-            this,
-            ViewModelProvider.AndroidViewModelFactory.getInstance(requireActivity().application)
-        )[HomeViewModel::class.java]
+        val sharedViewModel = ViewModelProvider(requireActivity())[SharedViewModel::class.java]
+
+        val homeViewModelFactory = HomeViewModelFactory(requireActivity().application, sharedViewModel)
+
+        val homeViewModel = ViewModelProvider(this, homeViewModelFactory)[HomeViewModel::class.java]
+
         _binding = FragmentHomeBinding.inflate(inflater, container, false)
         binding.fragmentHeaderTitle.text = getString(R.string.title_home)
 
@@ -66,6 +68,12 @@ class HomeFragment : Fragment() {
         super.onViewCreated(view, savedInstanceState)
         navController = NavHostFragment.findNavController(this)
 
+        val sharedViewModel = ViewModelProvider(requireActivity())[SharedViewModel::class.java]
+
+        val homeViewModelFactory = HomeViewModelFactory(requireActivity().application, sharedViewModel)
+
+        val homeViewModel = ViewModelProvider(this, homeViewModelFactory)[HomeViewModel::class.java]
+
         binding.homeComposeView.setContent {
             PurrytifyTheme {
                 Surface(
@@ -77,7 +85,7 @@ class HomeFragment : Fragment() {
                         onSongClick = { song ->
                             playerViewModel.playSong(song)
                             navigateToPlayback(song.id)
-                        }
+                        },
                     )
                 }
             }

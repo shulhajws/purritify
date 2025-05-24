@@ -35,6 +35,7 @@ class SharedViewModel : ViewModel() {
                     createdAt = response.createdAt,
                     updatedAt = response.updatedAt
                 )
+                Log.d("SharedViewModel", "User Profile update successfully: ${globalUserProfile.value}")
             } catch (e: Exception) {
                 e.printStackTrace()
                 Log.e("SharedViewModel", "Error fetching user profile: ${e.message}")
