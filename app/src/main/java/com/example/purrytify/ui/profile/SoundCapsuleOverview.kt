@@ -33,9 +33,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -52,7 +50,6 @@ import com.example.purrytify.data.dao.DayStreakSongData
 import com.example.purrytify.data.dao.TopArtistData
 import com.example.purrytify.data.dao.TopSongData
 import com.example.purrytify.repository.MonthYear
-import com.example.purrytify.repository.MonthlyAnalytics
 import com.example.purrytify.ui.theme.SpotifyGreen
 
 @Composable

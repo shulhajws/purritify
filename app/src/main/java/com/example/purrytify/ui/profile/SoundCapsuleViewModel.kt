@@ -3,7 +3,6 @@ package com.example.purrytify.ui.profile
 import android.app.Application
 import android.content.Context
 import android.content.Intent
-import android.net.Uri
 import android.os.Environment
 import android.util.Log
 import android.widget.Toast
@@ -11,17 +10,17 @@ import androidx.core.content.FileProvider
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.purrytify.data.AppDatabase
-import com.example.purrytify.data.dao.TopArtistData
-import com.example.purrytify.data.dao.TopSongData
-import com.example.purrytify.data.dao.DayStreakSongData
 import com.example.purrytify.repository.AnalyticsRepository
-import com.example.purrytify.repository.MonthlyAnalytics
 import com.example.purrytify.repository.MonthYear
-import kotlinx.coroutines.flow.*
+import com.example.purrytify.repository.MonthlyAnalytics
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import java.io.File
 import java.io.FileWriter
-import java.util.*
+import java.util.Calendar
 
 data class SoundCapsuleState(
     val isLoading: Boolean = false,
