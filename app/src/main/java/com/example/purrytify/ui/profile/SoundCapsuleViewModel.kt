@@ -20,7 +20,9 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import java.io.File
 import java.io.FileWriter
+import java.text.SimpleDateFormat
 import java.util.Calendar
+import java.util.Locale
 
 data class SoundCapsuleState(
     val isLoading: Boolean = false,
@@ -233,27 +235,18 @@ class SoundCapsuleViewModel(application: Application) : AndroidViewModel(applica
         return monthlyAnalyticsCache[monthYear]
     }
 
-    fun exportAnalytics(context: Context, format: ExportFormat) {
+    fun exportCompleteAnalytics(context: Context) {
         val userId = currentUserId ?: return
-        val selectedMonth = _state.value.selectedMonth ?: return
 
         viewModelScope.launch {
             _state.update { it.copy(isExporting = true) }
 
             try {
-                val exportData = analyticsRepository.getAnalyticsForExport(
-                    userId,
-                    selectedMonth.year,
-                    selectedMonth.month
-                )
-
-                when (format) {
-                    ExportFormat.CSV -> exportToCsv(context, exportData)
-                    ExportFormat.PDF -> exportToPdf(context, exportData)
-                }
+                val completeExportData = analyticsRepository.getAllAnalyticsForExport(userId)
+                exportCompleteToCsv(context, completeExportData)
 
             } catch (e: Exception) {
-                Log.e("SoundCapsuleViewModel", "Error exporting: ${e.message}")
+                Log.e("SoundCapsuleViewModel", "Error exporting complete analytics: ${e.message}")
                 Toast.makeText(context, "Export failed: ${e.message}", Toast.LENGTH_LONG).show()
             } finally {
                 _state.update { it.copy(isExporting = false) }
@@ -261,111 +254,126 @@ class SoundCapsuleViewModel(application: Application) : AndroidViewModel(applica
         }
     }
 
-    private fun exportToCsv(context: Context, exportData: com.example.purrytify.repository.AnalyticsExportData) {
+    private fun exportCompleteToCsv(context: Context, exportData: com.example.purrytify.repository.CompleteAnalyticsExportData) {
         try {
-            val fileName = "sound_capsule_${exportData.year}_${exportData.month}.csv"
-            val file = File(context.getExternalFilesDir(Environment.DIRECTORY_DOCUMENTS), fileName)
+            val dateFormat = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
+            val fileName = "purrytify_complete_sound_capsule_${dateFormat.format(exportData.exportDate)}.csv"
 
-            FileWriter(file).use { writer ->
-                // Write header
-                writer.append("Sound Capsule Analytics Report\n")
-                writer.append("Month: ${exportData.monthName}\n")
-                writer.append("Total Listen Time: ${exportData.totalListenTimeFormatted}\n")
-                writer.append("Daily Average: ${String.format("%.1f", exportData.dailyAverageMinutes)} minutes\n")
-                writer.append("Unique Artists: ${exportData.uniqueArtistsCount}\n")
-                writer.append("Unique Songs: ${exportData.uniqueSongsCount}\n\n")
+            // Save to both internal app directory and Downloads folder
+            val internalFile = File(context.getExternalFilesDir(Environment.DIRECTORY_DOCUMENTS), fileName)
+            val downloadsFile = File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS), fileName)
 
-                // Top Artists
-                writer.append("Top Artists\n")
-                writer.append("Rank,Artist,Play Count,Total Listen Time\n")
-                exportData.topArtists.forEachIndexed { index, artist ->
-                    writer.append("${index + 1},\"${artist.artist}\",${artist.playCount},${analyticsRepository.formatDuration(artist.totalListenTime)}\n")
-                }
-                writer.append("\n")
+            val csvContent = generateCsvContent(exportData)
 
-                // Top Songs
-                writer.append("Top Songs\n")
-                writer.append("Rank,Title,Artist,Play Count,Total Listen Time\n")
-                exportData.topSongs.forEachIndexed { index, song ->
-                    writer.append("${index + 1},\"${song.title}\",\"${song.artist}\",${song.playCount},${analyticsRepository.formatDuration(song.totalListenTime)}\n")
-                }
-                writer.append("\n")
-
-                // Day Streak Songs
-                if (exportData.dayStreakSongs.isNotEmpty()) {
-                    writer.append("Day Streak Songs\n")
-                    writer.append("Song,Artist,Consecutive Days,Start Date,End Date\n")
-                    exportData.dayStreakSongs.forEach { streak ->
-                        writer.append("\"${streak.title}\",\"${streak.artist}\",${streak.consecutiveDays},${streak.startDate},${streak.endDate}\n")
-                    }
-                    writer.append("\n")
-                }
-
-                // Daily Listen Data
-                writer.append("Daily Listen Data\n")
-                writer.append("Day,Date,Listen Time (minutes)\n")
-                exportData.dailyListenData.forEach { daily ->
-                    writer.append("${daily.day},${daily.dateString},${daily.listenTimeMinutes}\n")
-                }
+            // Write to internal storage
+            FileWriter(internalFile).use { writer ->
+                writer.append(csvContent)
             }
 
-            shareFile(context, file, "text/csv")
-            Toast.makeText(context, "CSV exported successfully", Toast.LENGTH_SHORT).show()
+            // Write to Downloads folder (if possible)
+            try {
+                FileWriter(downloadsFile).use { writer ->
+                    writer.append(csvContent)
+                }
+                Toast.makeText(context, "CSV exported to Downloads and shared successfully", Toast.LENGTH_LONG).show()
+            } catch (e: Exception) {
+                Log.w("SoundCapsuleViewModel", "Could not write to Downloads folder: ${e.message}")
+                Toast.makeText(context, "CSV exported and shared successfully", Toast.LENGTH_SHORT).show()
+            }
+
+            shareFile(context, internalFile, "text/csv")
 
         } catch (e: Exception) {
-            Log.e("SoundCapsuleViewModel", "CSV export error: ${e.message}")
+            Log.e("SoundCapsuleViewModel", "Complete CSV export error: ${e.message}")
             throw e
         }
     }
 
-    private fun exportToPdf(context: Context, exportData: com.example.purrytify.repository.AnalyticsExportData) {
-        // For simplicity, we'll create a text-based "PDF" file
-        // In a real implementation, you'd use a PDF library like iTextPDF
-        try {
-            val fileName = "sound_capsule_${exportData.year}_${exportData.month}.txt"
-            val file = File(context.getExternalFilesDir(Environment.DIRECTORY_DOCUMENTS), fileName)
+    private fun generateCsvContent(exportData: com.example.purrytify.repository.CompleteAnalyticsExportData): String {
+        val content = StringBuilder()
 
-            FileWriter(file).use { writer ->
-                writer.append("SOUND CAPSULE ANALYTICS REPORT\n")
-                writer.append("=" + "=".repeat(40) + "\n\n")
-                writer.append("Month: ${exportData.monthName}\n")
-                writer.append("Total Listen Time: ${exportData.totalListenTimeFormatted}\n")
-                writer.append("Daily Average: ${String.format("%.1f", exportData.dailyAverageMinutes)} minutes\n")
-                writer.append("Unique Artists: ${exportData.uniqueArtistsCount}\n")
-                writer.append("Unique Songs: ${exportData.uniqueSongsCount}\n\n")
+        // Write header
+        content.append("PURRYTIFY COMPLETE SOUND CAPSULE ANALYTICS\n")
+        content.append("Export Date: ${SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(exportData.exportDate)}\n")
+        content.append("User ID: ${exportData.userId}\n")
+        content.append("=" + "=".repeat(50) + "\n\n")
 
-                writer.append("TOP ARTISTS\n")
-                writer.append("-".repeat(30) + "\n")
-                exportData.topArtists.forEachIndexed { index, artist ->
-                    writer.append("${index + 1}. ${artist.artist}\n")
-                    writer.append("   Plays: ${artist.playCount} | Time: ${analyticsRepository.formatDuration(artist.totalListenTime)}\n\n")
+        // Overall Statistics
+        content.append("OVERALL STATISTICS\n")
+        content.append("Total Listen Time: ${exportData.totalListenTimeFormatted}\n")
+        content.append("Average Monthly Listen Time: ${analyticsRepository.formatMinutesToReadable(exportData.averageMonthlyListenTime)}\n")
+        content.append("Total Unique Artists: ${exportData.totalUniqueArtists}\n")
+        content.append("Total Unique Songs: ${exportData.totalUniqueSongs}\n")
+        content.append("Total Months with Data: ${exportData.monthlyBreakdown.size}\n\n")
+
+        // Overall Top Artists
+        content.append("OVERALL TOP ARTISTS\n")
+        content.append("Rank,Artist,Total Play Count,Total Listen Time\n")
+        exportData.overallTopArtists.forEachIndexed { index, artist ->
+            content.append("${index + 1},\"${artist.artist}\",${artist.playCount},${analyticsRepository.formatDurationForExport(artist.totalListenTime)}\n")
+        }
+        content.append("\n")
+
+        // Overall Top Songs
+        content.append("OVERALL TOP SONGS\n")
+        content.append("Rank,Title,Artist,Total Play Count,Total Listen Time\n")
+        exportData.overallTopSongs.forEachIndexed { index, song ->
+            content.append("${index + 1},\"${song.title}\",\"${song.artist}\",${song.playCount},${analyticsRepository.formatDurationForExport(song.totalListenTime)}\n")
+        }
+        content.append("\n")
+
+        // Overall Day Streak Songs
+        if (exportData.overallDayStreakSongs.isNotEmpty()) {
+            content.append("OVERALL DAY STREAK SONGS\n")
+            content.append("Song,Artist,Consecutive Days,Start Date,End Date\n")
+            exportData.overallDayStreakSongs.forEach { streak ->
+                content.append("\"${streak.title}\",\"${streak.artist}\",${streak.consecutiveDays},${streak.startDate},${streak.endDate}\n")
+            }
+            content.append("\n")
+        }
+
+        // Monthly Breakdown
+        content.append("MONTHLY BREAKDOWN\n")
+        content.append("=" + "=".repeat(30) + "\n\n")
+
+        exportData.monthlyBreakdown.forEach { monthData ->
+            val monthName = monthData.monthYear.getDisplayName()
+            content.append("$monthName\n")
+            content.append("-".repeat(monthName.length) + "\n")
+
+            content.append("Total Listen Time: ${analyticsRepository.formatMinutesToReadable(monthData.analytics.totalListenTimeMinutes)}\n")
+            content.append("Daily Average: ${String.format("%.1f", monthData.analytics.dailyAverageMinutes)} minutes\n")
+            content.append("Unique Artists: ${monthData.analytics.uniqueArtistsCount}\n")
+            content.append("Unique Songs: ${monthData.analytics.uniqueSongsCount}\n\n")
+
+            // Monthly Top Artists
+            if (monthData.analytics.topArtists.isNotEmpty()) {
+                content.append("Top Artists:\n")
+                monthData.analytics.topArtists.take(5).forEachIndexed { index, artist ->
+                    content.append("${index + 1}. ${artist.artist} (${artist.playCount} plays)\n")
                 }
-
-                writer.append("TOP SONGS\n")
-                writer.append("-".repeat(30) + "\n")
-                exportData.topSongs.forEachIndexed { index, song ->
-                    writer.append("${index + 1}. ${song.title}\n")
-                    writer.append("   by ${song.artist}\n")
-                    writer.append("   Plays: ${song.playCount} | Time: ${analyticsRepository.formatDuration(song.totalListenTime)}\n\n")
-                }
-
-                if (exportData.dayStreakSongs.isNotEmpty()) {
-                    writer.append("DAY STREAK SONGS\n")
-                    writer.append("-".repeat(30) + "\n")
-                    exportData.dayStreakSongs.forEach { streak ->
-                        writer.append("${streak.title} by ${streak.artist}\n")
-                        writer.append("${streak.getStreakDescription()}\n\n")
-                    }
-                }
+                content.append("\n")
             }
 
-            shareFile(context, file, "text/plain")
-            Toast.makeText(context, "Report exported successfully", Toast.LENGTH_SHORT).show()
+            // Monthly Top Songs
+            if (monthData.analytics.topSongs.isNotEmpty()) {
+                content.append("Top Songs:\n")
+                monthData.analytics.topSongs.take(5).forEachIndexed { index, song ->
+                    content.append("${index + 1}. ${song.title} by ${song.artist} (${song.playCount} plays)\n")
+                }
+                content.append("\n")
+            }
 
-        } catch (e: Exception) {
-            Log.e("SoundCapsuleViewModel", "PDF export error: ${e.message}")
-            throw e
+            // Daily Listen Data
+            content.append("Daily Listen Data:\n")
+            content.append("Day,Date,Listen Time (minutes)\n")
+            monthData.dailyData.forEach { daily ->
+                content.append("${daily.day},${daily.dateString},${daily.listenTimeMinutes}\n")
+            }
+            content.append("\n" + "=".repeat(50) + "\n\n")
         }
+
+        return content.toString()
     }
 
     private fun shareFile(context: Context, file: File, mimeType: String) {

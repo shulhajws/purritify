@@ -86,7 +86,7 @@ fun OverviewSoundCapsule(
                 IconButton(
                     onClick = {
                         if (!state.isExporting) {
-                            viewModel.exportAnalytics(context, ExportFormat.CSV)
+                            viewModel.exportCompleteAnalytics(context)
                         }
                     }
                 ) {
@@ -99,7 +99,7 @@ fun OverviewSoundCapsule(
                     } else {
                         Icon(
                             imageVector = Icons.Default.Download,
-                            contentDescription = "Export",
+                            contentDescription = "Export Complete Sound Capsule to CSV",
                             tint = Color.White,
                             modifier = Modifier.size(20.dp)
                         )
@@ -108,13 +108,14 @@ fun OverviewSoundCapsule(
 
                 IconButton(
                     onClick = {
-                        // Show more options (could show format selection dialog)
+                        // Reserved for future features (sharing, etc.)
+                        // Do nothing for now
                     }
                 ) {
                     Icon(
-                        imageVector = Icons.Default.Info,
-                        contentDescription = "Info",
-                        tint = Color.White,
+                        imageVector = Icons.Default.Share,
+                        contentDescription = "Share (Coming Soon)",
+                        tint = Color.White.copy(alpha = 0.6f), // Make it slightly transparent to indicate it's inactive
                         modifier = Modifier.size(20.dp)
                     )
                 }
@@ -220,18 +221,6 @@ fun MonthAnalyticsCard(
                     color = Color.White,
                     fontWeight = FontWeight.Bold
                 )
-                IconButton(
-                    onClick = {
-                        // Share Controller if Any
-                    }
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.Share,
-                        contentDescription = "Share",
-                        tint = Color.White,
-                        modifier = Modifier.size(20.dp)
-                    )
-                }
             }
 
             Spacer(modifier = Modifier.height(16.dp))

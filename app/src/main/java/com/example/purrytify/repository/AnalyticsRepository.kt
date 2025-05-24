@@ -277,6 +277,78 @@ class AnalyticsRepository(
         )
     }
 
+    suspend fun getAllAnalyticsForExport(userId: Int): CompleteAnalyticsExportData {
+        val availableMonths = getAvailableMonths(userId)
+        val monthlyData = mutableListOf<MonthlyAnalyticsExportData>()
+
+        for (monthYear in availableMonths) {
+            val analytics = getMonthlyAnalytics(userId, monthYear.year, monthYear.month)
+            val dailyData = getDailyListenTimeForMonth(userId, monthYear.year, monthYear.month)
+
+            monthlyData.add(
+                MonthlyAnalyticsExportData(
+                    monthYear = monthYear,
+                    analytics = analytics,
+                    dailyData = dailyData
+                )
+            )
+        }
+
+        val totalListenTimeMinutes = monthlyData.sumOf { it.analytics.totalListenTimeMinutes }
+        val totalUniqueSongs = monthlyData.flatMap { it.analytics.topSongs }.distinctBy { it.id }.size
+        val totalUniqueArtists = monthlyData.flatMap { it.analytics.topArtists }.distinctBy { it.artist }.size
+
+        val allArtistData = mutableMapOf<String, Pair<Int, Long>>()
+        val allSongData = mutableMapOf<Long, TopSongData>()
+
+        monthlyData.forEach { monthData ->
+            monthData.analytics.topArtists.forEach { artist ->
+                val current = allArtistData[artist.artist] ?: Pair(0, 0L)
+                allArtistData[artist.artist] = Pair(
+                    current.first + artist.playCount,
+                    current.second + artist.totalListenTime
+                )
+            }
+
+            monthData.analytics.topSongs.forEach { song ->
+                val existing = allSongData[song.id]
+                if (existing != null) {
+                    allSongData[song.id] = existing.copy(
+                        playCount = existing.playCount + song.playCount,
+                        totalListenTime = existing.totalListenTime + song.totalListenTime
+                    )
+                } else {
+                    allSongData[song.id] = song
+                }
+            }
+        }
+
+        val overallTopArtists = allArtistData.map { (artist, data) ->
+            TopArtistData(artist, data.first, data.second)
+        }.sortedByDescending { it.playCount }.take(10)
+
+        val overallTopSongs = allSongData.values.sortedByDescending { it.playCount }.take(10)
+
+        val allDayStreakSongs = monthlyData.flatMap { it.analytics.dayStreakSongs }
+            .distinctBy { it.id }
+            .sortedByDescending { it.consecutiveDays }
+            .take(10)
+
+        return CompleteAnalyticsExportData(
+            userId = userId,
+            exportDate = Date(),
+            totalListenTimeMinutes = totalListenTimeMinutes,
+            totalListenTimeFormatted = formatMinutesToReadable(totalListenTimeMinutes),
+            totalUniqueArtists = totalUniqueArtists,
+            totalUniqueSongs = totalUniqueSongs,
+            overallTopArtists = overallTopArtists,
+            overallTopSongs = overallTopSongs,
+            overallDayStreakSongs = allDayStreakSongs,
+            monthlyBreakdown = monthlyData,
+            averageMonthlyListenTime = if (availableMonths.isNotEmpty()) totalListenTimeMinutes / availableMonths.size else 0L
+        )
+    }
+
     // Format Time Duration For Display
     fun formatDuration(milliseconds: Long): String {
         val totalSeconds = milliseconds / 1000
@@ -303,7 +375,6 @@ class AnalyticsRepository(
         }
     }
 
-    // Format Time Duration For Csv Export More Detailed
     fun formatDurationForExport(milliseconds: Long): String {
         val totalSeconds = milliseconds / 1000
         val hours = totalSeconds / 3600
@@ -360,6 +431,26 @@ data class AnalyticsExportData(
     val uniqueArtistsCount: Int,
     val uniqueSongsCount: Int,
     val dailyAverageMinutes: Double
+)
+
+data class CompleteAnalyticsExportData(
+    val userId: Int,
+    val exportDate: Date,
+    val totalListenTimeMinutes: Long,
+    val totalListenTimeFormatted: String,
+    val totalUniqueArtists: Int,
+    val totalUniqueSongs: Int,
+    val overallTopArtists: List<TopArtistData>,
+    val overallTopSongs: List<TopSongData>,
+    val overallDayStreakSongs: List<DayStreakSongData>,
+    val monthlyBreakdown: List<MonthlyAnalyticsExportData>,
+    val averageMonthlyListenTime: Long
+)
+
+data class MonthlyAnalyticsExportData(
+    val monthYear: MonthYear,
+    val analytics: MonthlyAnalytics,
+    val dailyData: List<DailyListenData>
 )
 
 // Private Data Classes For Internal Use
