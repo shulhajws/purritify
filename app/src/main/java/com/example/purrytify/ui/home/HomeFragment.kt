@@ -19,6 +19,7 @@ import androidx.navigation.NavController
 import androidx.navigation.fragment.NavHostFragment
 import com.example.purrytify.R
 import com.example.purrytify.databinding.FragmentHomeBinding
+import com.example.purrytify.model.Song
 import com.example.purrytify.ui.playback.PlayerViewModel
 import com.example.purrytify.ui.shared.SharedViewModel
 import com.example.purrytify.ui.theme.PurrytifyTheme
@@ -84,7 +85,7 @@ class HomeFragment : Fragment() {
                         viewModel = homeViewModel,
                         onSongClick = { song ->
                             playerViewModel.playSong(song)
-                            navigateToPlayback(song.id)
+                            navigateToPlayback(song)
                         },
                     )
                 }
@@ -92,9 +93,10 @@ class HomeFragment : Fragment() {
         }
     }
 
-    private fun navigateToPlayback(songId: String) {
+    private fun navigateToPlayback(song: Song) {
         val bundle = Bundle().apply {
-            putString("songId", songId)
+            putString("songId", song.id)
+            putParcelable("song", song)
         }
         navController.navigate(R.id.navigation_song_playback, bundle)
     }
