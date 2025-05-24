@@ -40,7 +40,7 @@ import androidx.fragment.app.activityViewModels
 fun SongItem(
     song: Song,
     playerViewModel: PlayerViewModel,
-    onNavigateToPlayback: (String) -> Unit,
+    onNavigateToPlayback: (Song) -> Unit,
     onAddToQueueClick: () -> Unit,
 //    onLikeClick: () -> Unit,
     onShareClick: () -> Unit
@@ -53,7 +53,7 @@ fun SongItem(
             .padding(8.dp)
             .clickable {
                 playerViewModel.playSong(song)
-                onNavigateToPlayback(song.id)
+                onNavigateToPlayback(song)
             }
             .background(MaterialTheme.colorScheme.surfaceVariant, shape = RoundedCornerShape(4.dp))
             .padding(8.dp),

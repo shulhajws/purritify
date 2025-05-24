@@ -22,7 +22,6 @@ import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.DeleteSweep
 import androidx.compose.material.icons.filled.MusicNote
-import androidx.compose.material3.Divider
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -135,7 +134,7 @@ fun QueueDialogContent(
                     modifier = Modifier.padding(bottom = 4.dp)
                 )
 
-                SongItem(
+                QueueSongItem(
                     song = song,
                     isCurrentlyPlaying = true,
                     onRemove = null
@@ -171,7 +170,7 @@ fun QueueDialogContent(
                         .heightIn(max = 300.dp)
                 ) {
                     itemsIndexed(queue) { index, song ->
-                        SongItem(
+                        QueueSongItem(
                             song = song,
                             isCurrentlyPlaying = false,
                             onRemove = { viewModel.removeFromQueue(index) }
@@ -194,7 +193,7 @@ fun QueueDialogContent(
 }
 
 @Composable
-fun SongItem(
+fun QueueSongItem(
     song: Song,
     isCurrentlyPlaying: Boolean,
     onRemove: (() -> Unit)?

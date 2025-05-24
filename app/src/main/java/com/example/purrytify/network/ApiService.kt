@@ -19,6 +19,18 @@ data class UserProfileResponse(
     val createdAt: String,
     val updatedAt: String
 )
+data class SongResponse(
+    val id: Int,
+    val title: String,
+    val artist: String,
+    val artwork: String,
+    val url: String,
+    val duration: String, // format "mm:ss"
+    val country: String,  // can be "GLOBAL" or country code ISO 3166-1 alpha-2
+    val rank: Int,
+    val createdAt: String, // format ISO 8601
+    val updatedAt: String  // format ISO 8601
+)
 
 interface ApiService {
     // TODO: Define your API endpoints here, add new endpoints as needed
@@ -105,7 +117,7 @@ interface ApiService {
      *         On success, the server responds with a list of `Song` objects.
      */
     @GET("/api/top-songs/global")
-    fun getTopGlobalSongs(): Call<List<Song>>
+    suspend  fun getTopGlobalSongs(): List<SongResponse>
 
     /**
      * Retrieves the top 10 songs for a specific country from the server.
@@ -117,5 +129,5 @@ interface ApiService {
     @GET("/api/top-songs/{country_code}")
     fun getTopCountrySongs(
         @Path("country_code") countryCode: String
-    ): Call<List<Song>>
+    ): List<SongResponse>
 }

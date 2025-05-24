@@ -13,7 +13,7 @@ data class Song(
     val audioUrl: String,
     val isLiked: Boolean,
     val isListened: Boolean,
-    val uploadedAt: Date,
+    val uploadedAt: Date?,
     val updatedAt: Date? = null,
     val lastPlayedAt: Date? = null,
     val rank: Int? = null,
