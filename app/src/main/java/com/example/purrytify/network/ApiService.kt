@@ -4,7 +4,10 @@ import retrofit2.Call
 import retrofit2.http.Body
 import retrofit2.http.GET
 import retrofit2.http.Header
+import retrofit2.http.Multipart
+import retrofit2.http.PATCH
 import retrofit2.http.POST
+import retrofit2.http.Part
 import retrofit2.http.Path
 
 data class LoginRequest(val email: String, val password: String)
@@ -129,4 +132,23 @@ interface ApiService {
     suspend fun getTopCountrySongs(
         @Path("country_code") countryCode: String
     ): List<SongResponse>
+
+    /**
+     * Updates user profile information.
+     *
+     * @param token The authorization token in the format "Bearer <token>".
+     * @param location Optional location update as country code (ISO 3166-1 alpha-2).
+     * @param profilePhoto Optional profile photo file to upload.
+     * @return A `Call` object that can be used to execute the request asynchronously or synchronously.
+     *         On success, the server responds with updated UserProfileResponse.
+     */
+    @Multipart
+    @PATCH("/api/profile")
+    fun updateProfile(
+        @Header("Authorization") token: String,
+        @Part("location") location: okhttp3.RequestBody? = null,
+        @Part profilePhoto: okhttp3.MultipartBody.Part? = null
+    ): Call<UserProfileResponse>
+
+
 }
