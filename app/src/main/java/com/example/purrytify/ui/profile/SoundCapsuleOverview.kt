@@ -117,12 +117,11 @@ fun OverviewSoundCapsule(
                 )
             }
         } else if (state.availableMonths.isNotEmpty()) {
-            LazyColumn(
+            Column(
                 modifier = Modifier.fillMaxWidth(),
                 verticalArrangement = Arrangement.spacedBy(24.dp),
-                contentPadding = PaddingValues(horizontal = 16.dp)
             ) {
-                items(state.availableMonths) { month ->
+                state.availableMonths.forEach { month ->
                     MonthAnalyticsCard(
                         monthYear = month,
                         viewModel = viewModel,
@@ -192,8 +191,7 @@ fun MonthAnalyticsCard(
             // Month Title
             Row(
                 modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 16.dp),
+                    .fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ){
