@@ -126,7 +126,7 @@ interface ApiService {
      *         On success, the server responds with a list of `Song` objects.
      */
     @GET("/api/top-songs/{country_code}")
-    fun getTopCountrySongs(
+    suspend fun getTopCountrySongs(
         @Path("country_code") countryCode: String
     ): List<SongResponse>
 }

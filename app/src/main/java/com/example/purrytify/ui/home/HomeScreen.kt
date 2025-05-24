@@ -43,6 +43,8 @@ fun HomeScreen(
 ) {
     val newSongs by viewModel.newSongs.collectAsState()
     val recentlyPlayedSongs by viewModel.recentlyPlayedSongs.collectAsState()
+    val globalSongs by viewModel.globalSongs.collectAsState()
+    val countrySongs by viewModel.countrySongs.collectAsState()
     Box(
         modifier = Modifier
             .fillMaxSize()
@@ -54,6 +56,58 @@ fun HomeScreen(
                 .fillMaxSize()
                 .padding(16.dp)
         ) {
+            // Top Global Section
+            Text(
+                text = "Top 50 Global",
+                color = White,
+                style = MaterialTheme.typography.headlineMedium,
+                modifier = Modifier.padding(bottom = 16.dp)
+            )
+
+            if (globalSongs.isEmpty()) {
+                EmptyStateMessage(message = "No global songs")
+            } else {
+                LazyRow(
+                    horizontalArrangement = Arrangement.spacedBy(16.dp),
+                    modifier = Modifier.height(180.dp)
+                ) {
+                    items(globalSongs) { song ->
+                        NewSongItem(
+                            song = song,
+                            onSongClick = { onSongClick(song) }
+                        )
+                    }
+                }
+            }
+
+            Spacer(modifier = Modifier.height(32.dp))
+
+            // Top Country Section
+            Text(
+                text = "Top 10 Country",
+                color = White,
+                style = MaterialTheme.typography.headlineMedium,
+                modifier = Modifier.padding(bottom = 16.dp)
+            )
+
+            if (countrySongs.isEmpty()) {
+                EmptyStateMessage(message = "No country songs")
+            } else {
+                LazyRow(
+                    horizontalArrangement = Arrangement.spacedBy(16.dp),
+                    modifier = Modifier.height(180.dp)
+                ) {
+                    items(countrySongs) { song ->
+                        NewSongItem(
+                            song = song,
+                            onSongClick = { onSongClick(song) }
+                        )
+                    }
+                }
+            }
+
+            Spacer(modifier = Modifier.height(32.dp))
+
             // New Songs Section
             Text(
                 text = "New songs",
