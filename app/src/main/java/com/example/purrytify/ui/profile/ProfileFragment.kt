@@ -29,11 +29,13 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.fragment.app.Fragment
+import androidx.fragment.app.activityViewModels
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import androidx.navigation.NavController
+import androidx.navigation.fragment.NavHostFragment
 import com.example.purrytify.R
 import com.example.purrytify.databinding.FragmentProfileBinding
 import com.example.purrytify.ui.login.LoginActivity
@@ -56,10 +58,7 @@ class ProfileFragment : Fragment() {
         )[SoundCapsuleViewModel::class.java]
     }
 
-
-    private val sharedViewModel: SharedViewModel by lazy {
-        ViewModelProvider(requireActivity())[SharedViewModel::class.java]
-    }
+    private val sharedViewModel: SharedViewModel by activityViewModels()
 
     override fun onCreateView(
         inflater: LayoutInflater,
@@ -74,6 +73,7 @@ class ProfileFragment : Fragment() {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
+        navController = NavHostFragment.findNavController(this)
 
         viewLifecycleOwner.lifecycleScope.launch {
             viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
@@ -83,6 +83,8 @@ class ProfileFragment : Fragment() {
                             val userId = profile.id.toInt()
                             Log.d("ProfileFragment", "Updating profileViewModel with userId: $userId")
                             profileViewModel.updateForUser(userId)
+                            Log.d("ProfileFragment", "Updating soundCapsuleViewModel with userId: $userId")
+                            soundCapsuleViewModel.updateForUser(userId)
                         } catch (e: NumberFormatException) {
                             Log.e("ProfileFragment", "Invalid user ID format: ${profile.id}")
                         }
@@ -97,8 +99,8 @@ class ProfileFragment : Fragment() {
                     modifier = Modifier.fillMaxSize(),
                     color = MaterialTheme.colorScheme.background
                 ) {
-                    // Note: If you see warning down here, just ignore it, Android Studio have wrong logic this time
-                    if (!NetworkUtil.isNetworkAvailable(requireContext()) && (sharedViewModel.globalUserProfile == null)) {
+                    if (!NetworkUtil.isNetworkAvailable(requireContext()) && (sharedViewModel.globalUserProfile.collectAsState().value == null)) {
+                        // Offline UI
                         Column(
                             modifier = Modifier
                                 .fillMaxSize()
@@ -127,20 +129,11 @@ class ProfileFragment : Fragment() {
                             val context = LocalContext.current
                             Button(
                                 onClick = {
-                                    // Clear the token
                                     TokenManager.clearToken(context)
-
-                                    // Clear globalUserProfile variable
                                     sharedViewModel.clearGlobalUserProfile()
-
-                                    // Navigate to LoginActivity
                                     val intent = Intent(context, LoginActivity::class.java)
                                     context.startActivity(intent)
-
-                                    // Toast message
                                     Toast.makeText(context, "Logged out successfully", Toast.LENGTH_SHORT).show()
-
-                                    // Finish current activity "if needed"
                                     (context as? Activity)?.finish()
                                 },
                                 colors = ButtonDefaults.buttonColors(
@@ -159,36 +152,32 @@ class ProfileFragment : Fragment() {
                             }
                         }
                     } else {
-                        Log.d("ProfileFragment", "Debug currentUserProfile: internet connection available")
+                        Log.d("ProfileFragment", "Online - showing profile content")
+
                         // Get global user profile from SharedViewModel
                         val userProfile = sharedViewModel.globalUserProfile.collectAsState().value
-                        Log.d("ProfileFragment",  "Debug currentUserProfile: $userProfile")
+                        Log.d("ProfileFragment", "Debug currentUserProfile: $userProfile")
 
                         val songsCount = profileViewModel.songsCount.collectAsState().value
                         val likedCount = profileViewModel.likedCount.collectAsState().value
                         val listenedCount = profileViewModel.listenedCount.collectAsState().value
                         Log.d("ProfileFragment", "Stats from DB - Songs: $songsCount, Liked: $likedCount, Listened: $listenedCount")
 
+                        val soundCapsuleState = soundCapsuleViewModel.state.collectAsState().value
+                        Log.d("ProfileFragment", "SoundCapsule state - availableMonths: ${soundCapsuleState.availableMonths.size}, isLoading: ${soundCapsuleState.isLoading}, error: ${soundCapsuleState.error}")
+
                         // If userProfile is null, force logout
                         if (userProfile == null) {
-                            // Clear the token
                             TokenManager.clearToken(requireContext())
-
-                            // Clear globalUserProfile variable
                             sharedViewModel.clearGlobalUserProfile()
-
-                            // Navigate to LoginActivity
                             val intent = Intent(requireContext(), LoginActivity::class.java)
                             startActivity(intent)
-
-                            // Toast message
                             Toast.makeText(requireContext(), "Session expired. Please log in again.", Toast.LENGTH_SHORT).show()
-
-                            // Finish current activity "if needed"
                             (requireContext() as? Activity)?.finish()
                         }
+
                         userProfile?.let {
-                            Log.d("ProfileFragment", "it.username: ${it.username}")
+                            Log.d("ProfileFragment", "Rendering ProfileScreen for user: ${it.username}")
                             ProfileScreen(
                                 userProfile = it,
                                 songsCount = songsCount,

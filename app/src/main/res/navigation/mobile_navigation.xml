@@ -51,7 +51,27 @@
         android:id="@+id/navigation_profile"
         android:name="com.example.purrytify.ui.profile.ProfileFragment"
         android:label="@string/title_profile"
-        tools:layout="@layout/fragment_profile" />
+        tools:layout="@layout/fragment_profile">
+
+        <!-- Sound Capsule Navigation Actions -->
+        <action
+            android:id="@+id/action_profile_to_sound_capsule_time_listened"
+            app:destination="@id/navigation_sound_capsule_time_listened"
+            app:enterAnim="@android:anim/slide_in_left"
+            app:exitAnim="@android:anim/slide_out_right" />
+
+        <action
+            android:id="@+id/action_profile_to_sound_capsule_top_artists"
+            app:destination="@id/navigation_sound_capsule_top_artists"
+            app:enterAnim="@android:anim/slide_in_left"
+            app:exitAnim="@android:anim/slide_out_right" />
+
+        <action
+            android:id="@+id/action_profile_to_sound_capsule_top_songs"
+            app:destination="@id/navigation_sound_capsule_top_songs"
+            app:enterAnim="@android:anim/slide_in_left"
+            app:exitAnim="@android:anim/slide_out_right" />
+    </fragment>
 
     <!-- Song Playback -->
     <fragment
@@ -96,5 +116,42 @@
             android:name="songId"
             android:defaultValue="-1L"
             app:argType="long" />
+    </fragment>
+
+    <!-- Sound Capsule Screens -->
+    <fragment
+        android:id="@+id/navigation_sound_capsule_time_listened"
+        android:name="com.example.purrytify.ui.profile.SoundCapsuleTimeListenedFragment"
+        android:label="Time Listened">
+        <argument
+            android:name="year"
+            app:argType="integer" />
+        <argument
+            android:name="month"
+            app:argType="integer" />
+    </fragment>
+
+    <fragment
+        android:id="@+id/navigation_sound_capsule_top_artists"
+        android:name="com.example.purrytify.ui.profile.SoundCapsuleTopArtistsFragment"
+        android:label="Top Artists">
+        <argument
+            android:name="year"
+            app:argType="integer" />
+        <argument
+            android:name="month"
+            app:argType="integer" />
+    </fragment>
+
+    <fragment
+        android:id="@+id/navigation_sound_capsule_top_songs"
+        android:name="com.example.purrytify.ui.profile.SoundCapsuleTopSongsFragment"
+        android:label="Top Songs">
+        <argument
+            android:name="year"
+            app:argType="integer" />
+        <argument
+            android:name="month"
+            app:argType="integer" />
     </fragment>
 </navigation>
