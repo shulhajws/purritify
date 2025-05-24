@@ -93,6 +93,17 @@ class PlayerViewModel(application: Application) : AndroidViewModel(application) 
         }
     }
 
+    private val analyticsUpdateHandler = Handler(Looper.getMainLooper())
+    private val analyticsUpdateRunnable = object : Runnable {
+        override fun run() {
+            updateCurrentSessionInRealTime()
+            // Update every 5 seconds while playing
+            if (_isPlaying.value && currentSessionId != null) {
+                analyticsUpdateHandler.postDelayed(this, 30000)
+            }
+        }
+    }
+
     init {
         val database = AppDatabase.getDatabase(application)
         repository = SongRepository(database.songDao())
@@ -235,7 +246,7 @@ class PlayerViewModel(application: Application) : AndroidViewModel(application) 
         Log.d("PlayerViewModel", "playSong called for: ${song.title}")
 
         val currentSongId = _currentSong.value?.id
-        if (currentSongId != null && currentSongId != song.id) {
+        if (currentSessionId != null && currentSongId != null && currentSongId != song.id) {
             Log.d("PlayerViewModel", "Switching songs, ending previous session")
             endCurrentSession()
         }
@@ -261,10 +272,9 @@ class PlayerViewModel(application: Application) : AndroidViewModel(application) 
                 try {
                     val context = getApplication<Application>().applicationContext
                     val uri = Uri.parse(song.audioUrl)
-                    // For content URIs, we need to use a different approach
+
                     if (song.audioUrl.startsWith("content://")) {
                         Log.d("PlayerViewModel", "Handling content URI")
-                        // Check if we have permission first
                         val contentResolver = context.contentResolver
                         val hasPermission = contentResolver.persistedUriPermissions.any {
                             it.uri.toString() == song.audioUrl && it.isReadPermission
@@ -273,26 +283,17 @@ class PlayerViewModel(application: Application) : AndroidViewModel(application) 
                             Log.e("PlayerViewModel", "No permission for URI: ${song.audioUrl}")
                             throw SecurityException("No permission for URI: ${song.audioUrl}")
                         }
-                        // We have permission, try to open file descriptor
                         val parcelFileDescriptor = context.contentResolver.openFileDescriptor(uri, "r")
                         parcelFileDescriptor?.use { pfd ->
                             setDataSource(pfd.fileDescriptor)
                         } ?: throw IOException("Could not open file descriptor")
-                    }
-                    // For file paths (not URIs)
-                    else if (song.audioUrl.startsWith("/")) {
+                    } else if (song.audioUrl.startsWith("/")) {
                         setDataSource(song.audioUrl)
-                    }
-                    // For file URIs (file://)
-                    else if (song.audioUrl.startsWith("file://")) {
+                    } else if (song.audioUrl.startsWith("file://")) {
                         setDataSource(song.audioUrl)
-                    }
-                    // For online URLs
-                    else if (song.audioUrl.startsWith("http://") || song.audioUrl.startsWith("https://")) {
+                    } else if (song.audioUrl.startsWith("http://") || song.audioUrl.startsWith("https://")) {
                         setDataSource(song.audioUrl)
-                    }
-                    // Fallback for other cases
-                    else {
+                    } else {
                         setDataSource(song.audioUrl)
                     }
 
@@ -303,15 +304,19 @@ class PlayerViewModel(application: Application) : AndroidViewModel(application) 
                         it.start()
                         handler.post(updateProgressRunnable)
                         startAnalyticsSession(song)
+                        // Start real-time analytics updates
+                        startRealTimeAnalyticsUpdates()
                     }
                     setOnErrorListener { _, what, extra ->
                         Log.e("PlayerViewModel", "MediaPlayer error: what=$what, extra=$extra")
                         _isPlaying.value = false
+                        stopRealTimeAnalyticsUpdates()
                         true
                     }
                     setOnCompletionListener {
                         _isPlaying.value = false
                         handler.removeCallbacks(updateProgressRunnable)
+                        stopRealTimeAnalyticsUpdates()
                         handleSongCompletion()
                     }
                     prepareAsync()
@@ -340,19 +345,21 @@ class PlayerViewModel(application: Application) : AndroidViewModel(application) 
     private fun handleSongCompletion() {
         Log.d("PlayerViewModel", "Song completed")
 
-        currentSessionId?.let { sessionId ->
+        val sessionToEnd = currentSessionId
+        if (sessionToEnd != null) {
             viewModelScope.launch {
                 try {
-                    val totalSessionDuration = System.currentTimeMillis() - sessionStartTime
+                    val currentTime = System.currentTimeMillis()
+                    val totalSessionDuration = currentTime - sessionStartTime
                     val actualListenTime = maxOf(0, totalSessionDuration - totalPausedDuration)
 
                     analyticsRepository.updateListeningSession(
-                        sessionId = sessionId,
+                        sessionId = sessionToEnd,
                         actualListenDurationMs = actualListenTime,
                         wasCompleted = true
                     )
 
-                    Log.d("PlayerViewModel", "Song completed - ended analytics session: $sessionId, duration: ${actualListenTime}ms")
+                    Log.d("PlayerViewModel", "Song completed - ended analytics session: $sessionToEnd, duration: ${actualListenTime}ms")
 
                     currentSessionId = null
                     sessionStartTime = 0
@@ -409,6 +416,7 @@ class PlayerViewModel(application: Application) : AndroidViewModel(application) 
                 it.pause()
                 _isPlaying.value = false
                 handler.removeCallbacks(updateProgressRunnable)
+                stopRealTimeAnalyticsUpdates()
 
                 lastPauseTime = System.currentTimeMillis()
                 wasPlayingBeforePause = true
@@ -417,6 +425,7 @@ class PlayerViewModel(application: Application) : AndroidViewModel(application) 
                 it.start()
                 _isPlaying.value = true
                 handler.post(updateProgressRunnable)
+                startRealTimeAnalyticsUpdates()
 
                 if (wasPlayingBeforePause && lastPauseTime > 0) {
                     totalPausedDuration += System.currentTimeMillis() - lastPauseTime
@@ -530,6 +539,8 @@ class PlayerViewModel(application: Application) : AndroidViewModel(application) 
     }
 
     private fun stopCurrentSong() {
+        stopRealTimeAnalyticsUpdates()
+
         if (mediaPlayer != null && currentSessionId != null) {
             Log.d("PlayerViewModel", "Stopping current song, ending analytics session")
             endCurrentSession()
@@ -659,17 +670,31 @@ class PlayerViewModel(application: Application) : AndroidViewModel(application) 
 
     private fun endCurrentSession() {
         val sessionId = currentSessionId ?: return
+        val startTime = sessionStartTime
+
+        // Clear session data immediately to prevent race conditions
+        currentSessionId = null
+        val capturedSessionStartTime = sessionStartTime
+        val capturedTotalPausedDuration = totalPausedDuration
+        val capturedLastPauseTime = lastPauseTime
+        val capturedWasPlayingBeforePause = wasPlayingBeforePause
+
+        // Reset session variables
+        sessionStartTime = 0
+        totalPausedDuration = 0
+        lastPauseTime = 0
+        wasPlayingBeforePause = false
 
         viewModelScope.launch {
             try {
                 val currentTime = System.currentTimeMillis()
-                val totalSessionDuration = currentTime - sessionStartTime
+                val totalSessionDuration = currentTime - capturedSessionStartTime
 
                 // If currently paused, add the current pause duration
-                val finalPausedDuration = if (lastPauseTime > 0 && wasPlayingBeforePause) {
-                    totalPausedDuration + (currentTime - lastPauseTime)
+                val finalPausedDuration = if (capturedLastPauseTime > 0 && capturedWasPlayingBeforePause) {
+                    capturedTotalPausedDuration + (currentTime - capturedLastPauseTime)
                 } else {
-                    totalPausedDuration
+                    capturedTotalPausedDuration
                 }
 
                 // Calculate actual listen time (total session time minus paused time)
@@ -688,21 +713,53 @@ class PlayerViewModel(application: Application) : AndroidViewModel(application) 
 
                 Log.d("PlayerViewModel", "Ended analytics session: $sessionId, duration: ${actualListenTime}ms, completed: $wasCompleted")
 
-                currentSessionId = null
-                sessionStartTime = 0
-                totalPausedDuration = 0
-                lastPauseTime = 0
-                wasPlayingBeforePause = false
-
             } catch (e: Exception) {
                 Log.e("PlayerViewModel", "Error ending analytics session: ${e.message}")
             }
         }
     }
 
-    fun getAnalyticsRepository(): AnalyticsRepository {
-        return analyticsRepository
+    private fun startRealTimeAnalyticsUpdates() {
+        analyticsUpdateHandler.removeCallbacks(analyticsUpdateRunnable)
+        if (_isPlaying.value && currentSessionId != null) {
+            analyticsUpdateHandler.post(analyticsUpdateRunnable)
+        }
     }
+
+    private fun stopRealTimeAnalyticsUpdates() {
+        analyticsUpdateHandler.removeCallbacks(analyticsUpdateRunnable)
+    }
+
+    private fun updateCurrentSessionInRealTime() {
+        val sessionId = currentSessionId ?: return
+        val userId = currentUserId ?: return
+
+        viewModelScope.launch {
+            try {
+                val currentTime = System.currentTimeMillis()
+                val totalSessionDuration = currentTime - sessionStartTime
+
+                // Calculate current pause duration if paused
+                val currentPausedDuration = if (lastPauseTime > 0 && wasPlayingBeforePause) {
+                    totalPausedDuration + (currentTime - lastPauseTime)
+                } else {
+                    totalPausedDuration
+                }
+
+                val actualListenTime = maxOf(0, totalSessionDuration - currentPausedDuration)
+
+                // Update the session with current listen time (but don't mark as completed)
+                analyticsRepository.updateCurrentSessionListenTime(sessionId, actualListenTime)
+
+                Log.d("PlayerViewModel", "Real-time update: session $sessionId, current listen time: ${actualListenTime}ms")
+
+            } catch (e: Exception) {
+                Log.e("PlayerViewModel", "Error updating session in real-time: ${e.message}")
+            }
+        }
+    }
+
+
 
     fun getAudioRouteManager(): AudioRouteManager? {
         return audioRouteManager

@@ -105,19 +105,30 @@ class SoundCapsuleViewModel(application: Application) : AndroidViewModel(applica
 
     private fun observeCurrentMonthListenTime(userId: Int) {
         viewModelScope.launch {
-            analyticsRepository.getCurrentMonthListenTimeFlow(userId).collect { listenTime ->
-                _state.update { it.copy(currentMonthListenTime = listenTime) }
+            // Use a faster update interval for real-time updates
+            while (true) {
+                try {
+                    val listenTime = analyticsRepository.getCurrentMonthListenTime(userId)
+                    _state.update { it.copy(currentMonthListenTime = listenTime) }
 
-                // Refresh current month analytics if it's selected
-                val currentCalendar = Calendar.getInstance()
-                val currentMonth = MonthYear(
-                    currentCalendar.get(Calendar.YEAR),
-                    currentCalendar.get(Calendar.MONTH) + 1
-                )
+                    // Refresh current month analytics if it's selected
+                    val currentCalendar = Calendar.getInstance()
+                    val currentMonth = MonthYear(
+                        currentCalendar.get(Calendar.YEAR),
+                        currentCalendar.get(Calendar.MONTH) + 1
+                    )
 
-                if (_state.value.selectedMonth == currentMonth) {
-                    loadAnalyticsForMonth(currentMonth)
+                    if (_state.value.selectedMonth == currentMonth) {
+                        // Clear cache for current month to force reload
+                        monthlyAnalyticsCache.remove(currentMonth)
+                        loadAnalyticsForMonth(currentMonth)
+                    }
+                } catch (e: Exception) {
+                    Log.e("SoundCapsuleViewModel", "Error updating real-time analytics: ${e.message}")
                 }
+
+                // Update every 3 seconds for real-time feel
+                kotlinx.coroutines.delay(3000)
             }
         }
     }
@@ -174,6 +185,19 @@ class SoundCapsuleViewModel(application: Application) : AndroidViewModel(applica
                     )
                 }
             }
+        }
+    }
+
+    fun refreshCurrentMonth() {
+        val currentCalendar = Calendar.getInstance()
+        val currentMonth = MonthYear(
+            currentCalendar.get(Calendar.YEAR),
+            currentCalendar.get(Calendar.MONTH) + 1
+        )
+
+        monthlyAnalyticsCache.remove(currentMonth)
+        if (_state.value.selectedMonth == currentMonth) {
+            loadAnalyticsForMonth(currentMonth)
         }
     }
 

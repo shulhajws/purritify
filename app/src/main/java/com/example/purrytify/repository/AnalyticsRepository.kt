@@ -80,7 +80,7 @@ class AnalyticsRepository(
         return MonthlyAnalytics(
             year = year,
             month = month,
-            totalListenTimeMinutes = totalListenTimeMs / (1000 * 60), // convert to minutes
+            totalListenTimeMinutes = totalListenTimeMs / (1000 * 60),
             topArtists = topArtists,
             topSongs = topSongs,
             dayStreakSongs = dayStreakSongs,
@@ -88,6 +88,19 @@ class AnalyticsRepository(
             uniqueSongsCount = uniqueSongsCount,
             dailyAverageMinutes = dailyAverageMinutes
         )
+    }
+
+    suspend fun updateCurrentSessionListenTime(
+        sessionId: Long,
+        actualListenDurationMs: Long
+    ) {
+        val session = analyticsDao.getSessionById(sessionId)
+        session?.let {
+            val updatedSession = it.copy(
+                actualListenDurationMs = actualListenDurationMs
+            )
+            analyticsDao.updateSession(updatedSession)
+        }
     }
 
     // Streak Calculation
