@@ -1,4 +1,4 @@
-package com.example.purrytify.network
+package com.example.purrytify.services
 
 import retrofit2.Call
 import retrofit2.http.Body

@@ -11,7 +11,7 @@ import com.example.purrytify.data.AppDatabase
 import com.example.purrytify.data.mapper.SongMapper
 import com.example.purrytify.model.Song
 import com.example.purrytify.model.UserProfile
-import com.example.purrytify.network.RetrofitClient
+import com.example.purrytify.services.RetrofitClient
 import com.example.purrytify.repository.SongRepository
 import com.example.purrytify.ui.shared.SharedViewModel
 import kotlinx.coroutines.flow.MutableStateFlow

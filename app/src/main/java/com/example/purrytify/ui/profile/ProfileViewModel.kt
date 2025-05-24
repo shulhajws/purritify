@@ -1,17 +1,10 @@
 package com.example.purrytify.ui.profile
 
 import android.app.Application
-import android.content.Context
-import android.util.Log
 import androidx.lifecycle.AndroidViewModel
-import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.purrytify.data.AppDatabase
-import com.example.purrytify.model.UserProfile
-import com.example.purrytify.network.RetrofitClient
 import com.example.purrytify.repository.SongRepository
-import com.example.purrytify.util.NetworkUtil
-import com.example.purrytify.util.TokenManager
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
