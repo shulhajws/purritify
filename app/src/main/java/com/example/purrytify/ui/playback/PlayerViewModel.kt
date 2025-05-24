@@ -351,7 +351,14 @@ class PlayerViewModel(application: Application) : AndroidViewModel(application) 
                 try {
                     val currentTime = System.currentTimeMillis()
                     val totalSessionDuration = currentTime - sessionStartTime
-                    val actualListenTime = maxOf(0, totalSessionDuration - totalPausedDuration)
+
+                    // Defensive Check
+                    val actualListenTime = if (totalSessionDuration < 0 || totalSessionDuration > 86400000) {
+                        Log.w("PlayerViewModel", "Unrealistic completion duration: ${totalSessionDuration}ms, using song duration")
+                        _duration.value.toLong()
+                    } else {
+                        maxOf(0, totalSessionDuration - totalPausedDuration)
+                    }
 
                     analyticsRepository.updateListeningSession(
                         sessionId = sessionToEnd,
@@ -672,14 +679,12 @@ class PlayerViewModel(application: Application) : AndroidViewModel(application) 
         val sessionId = currentSessionId ?: return
         val startTime = sessionStartTime
 
-        // Clear session data immediately to prevent race conditions
         currentSessionId = null
         val capturedSessionStartTime = sessionStartTime
         val capturedTotalPausedDuration = totalPausedDuration
         val capturedLastPauseTime = lastPauseTime
         val capturedWasPlayingBeforePause = wasPlayingBeforePause
 
-        // Reset session variables
         sessionStartTime = 0
         totalPausedDuration = 0
         lastPauseTime = 0
@@ -690,19 +695,51 @@ class PlayerViewModel(application: Application) : AndroidViewModel(application) 
                 val currentTime = System.currentTimeMillis()
                 val totalSessionDuration = currentTime - capturedSessionStartTime
 
+                // Defensive check: Reject unrealistic session durations
+                if (totalSessionDuration < 0 || totalSessionDuration > 86400000) { // 24 hours max
+                    Log.w("PlayerViewModel", "Unrealistic session duration detected: ${totalSessionDuration}ms, ending session with 0 duration")
+
+                    analyticsRepository.updateListeningSession(
+                        sessionId = sessionId,
+                        actualListenDurationMs = 0,
+                        wasCompleted = false
+                    )
+                    return@launch
+                }
+
                 // If currently paused, add the current pause duration
                 val finalPausedDuration = if (capturedLastPauseTime > 0 && capturedWasPlayingBeforePause) {
-                    capturedTotalPausedDuration + (currentTime - capturedLastPauseTime)
+                    val pauseDuration = currentTime - capturedLastPauseTime
+                    if (pauseDuration < 0 || pauseDuration > 86400000) {
+                        Log.w("PlayerViewModel", "Unrealistic pause duration detected, using previous total")
+                        capturedTotalPausedDuration
+                    } else {
+                        capturedTotalPausedDuration + pauseDuration
+                    }
                 } else {
                     capturedTotalPausedDuration
                 }
 
-                // Calculate actual listen time (total session time minus paused time)
                 val actualListenTime = maxOf(0, totalSessionDuration - finalPausedDuration)
 
-                // Consider session completed if they listened to at least 30 seconds or 50% of song
+                // Final Defensive Check
+                if (actualListenTime > 86400000) {
+                    Log.w("PlayerViewModel", "Unrealistic actual listen time: ${actualListenTime}ms, capping at song duration")
+                    val songDuration = _duration.value.toLong()
+                    val cappedListenTime = minOf(actualListenTime, songDuration)
+
+                    analyticsRepository.updateListeningSession(
+                        sessionId = sessionId,
+                        actualListenDurationMs = cappedListenTime,
+                        wasCompleted = cappedListenTime >= minOf(30000L, songDuration / 2)
+                    )
+
+                    Log.d("PlayerViewModel", "Ended analytics session: $sessionId, capped duration: ${cappedListenTime}ms")
+                    return@launch
+                }
+
                 val songDuration = _duration.value.toLong()
-                val completionThreshold = minOf(30000L, songDuration / 2) // 30 seconds or 50% of song
+                val completionThreshold = minOf(30000L, songDuration / 2)
                 val wasCompleted = actualListenTime >= completionThreshold
 
                 analyticsRepository.updateListeningSession(
@@ -739,16 +776,34 @@ class PlayerViewModel(application: Application) : AndroidViewModel(application) 
                 val currentTime = System.currentTimeMillis()
                 val totalSessionDuration = currentTime - sessionStartTime
 
-                // Calculate current pause duration if paused
+                // Defensive check: Session shouldn't be longer than 24 hours (86400000ms)
+                if (totalSessionDuration < 0 || totalSessionDuration > 86400000) {
+                    Log.w("PlayerViewModel", "Unrealistic session duration detected: ${totalSessionDuration}ms, skipping update")
+                    return@launch
+                }
+
+                // Defensive Measure: Calculate current pause duration if paused
                 val currentPausedDuration = if (lastPauseTime > 0 && wasPlayingBeforePause) {
-                    totalPausedDuration + (currentTime - lastPauseTime)
+                    val pauseDuration = currentTime - lastPauseTime
+                    // Defensive check for pause duration
+                    if (pauseDuration < 0 || pauseDuration > 86400000) {
+                        Log.w("PlayerViewModel", "Unrealistic pause duration detected: ${pauseDuration}ms, using previous total")
+                        totalPausedDuration
+                    } else {
+                        totalPausedDuration + pauseDuration
+                    }
                 } else {
                     totalPausedDuration
                 }
 
                 val actualListenTime = maxOf(0, totalSessionDuration - currentPausedDuration)
 
-                // Update the session with current listen time (but don't mark as completed)
+                // Final Defensive Check: Listen time shouldn't be longer than 24 hours (86400000ms)
+                if (actualListenTime > 86400000) {
+                    Log.w("PlayerViewModel", "Unrealistic listen time detected: ${actualListenTime}ms, skipping update")
+                    return@launch
+                }
+
                 analyticsRepository.updateCurrentSessionListenTime(sessionId, actualListenTime)
 
                 Log.d("PlayerViewModel", "Real-time update: session $sessionId, current listen time: ${actualListenTime}ms")
