@@ -273,7 +273,7 @@ fun ProfileScreen(
                 ) {
                     Text(
                         text = editProfileViewModel.getCountryNameFromCode(userProfile.location),
-                        style = MaterialTheme.typography.bodyMedium,
+                        style = MaterialTheme.typography.bodyLarge,
                         color = secondaryTextColor
                     )
 
@@ -295,12 +295,6 @@ fun ProfileScreen(
                         )
                     }
                 }
-
-                Text(
-                    text = userProfile.email,
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = secondaryTextColor
-                )
 
                 Spacer(modifier = Modifier.height(24.dp))
 
@@ -475,6 +469,9 @@ fun ProfileScreen(
                 } else {
                     locationPermissionLauncher.launch(arrayOf(fineLocationPermission, coarseLocationPermission))
                 }
+            },
+            onCancelLocationRequest = {
+                editProfileViewModel.cancelLocationRequest()
             }
         )
     }
@@ -486,7 +483,8 @@ fun LocationSelectionDialog(
     editProfileViewModel: EditProfileViewModel,
     onDismiss: () -> Unit,
     onLocationSelected: (String) -> Unit,
-    onCurrentLocationRequested: () -> Unit
+    onCurrentLocationRequested: () -> Unit,
+    onCancelLocationRequest: () -> Unit
 ) {
     val context = LocalContext.current
     val editState by editProfileViewModel.state.collectAsState()
@@ -496,60 +494,63 @@ fun LocationSelectionDialog(
     var selectedCountry by remember { mutableStateOf(availableCountries.first()) }
 
     AlertDialog(
-        onDismissRequest = onDismiss,
-        title = {
-            Text("Change Location")
+        onDismissRequest = {
+            if (editState.isLocationLoading) {
+                onCancelLocationRequest()
+            }
+            onDismiss()
         },
+        title = { Text("Change Location") },
         text = {
             Column {
                 Text("Select your location:")
-
                 Spacer(modifier = Modifier.height(16.dp))
 
-                // Current Location Button
+                // Auto Location Button
                 Button(
-                    onClick = onCurrentLocationRequested,
-                    enabled = !editState.isLocationLoading,
-                    colors = ButtonDefaults.buttonColors(containerColor = SpotifyGreen),
+                    onClick = if (editState.isLocationLoading) onCancelLocationRequest else onCurrentLocationRequested,
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = if (editState.isLocationLoading) Color.Red else SpotifyGreen
+                    ),
                     modifier = Modifier.fillMaxWidth()
                 ) {
                     if (editState.isLocationLoading) {
-                        CircularProgressIndicator(
-                            modifier = Modifier.size(16.dp),
-                            color = White,
-                            strokeWidth = 2.dp
-                        )
-                        Spacer(modifier = Modifier.width(8.dp))
+                        Text("Cancel Location")
                     } else {
-                        Icon(
-                            imageVector = Icons.Default.MyLocation,
-                            contentDescription = null,
-                            modifier = Modifier.size(16.dp)
-                        )
+                        Icon(Icons.Default.MyLocation, null, modifier = Modifier.size(16.dp))
                         Spacer(modifier = Modifier.width(8.dp))
+                        Text("Use Current Location")
                     }
-                    Text("Use Current Location")
+                }
+
+                if (editState.isLocationLoading) {
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.Center
+                    ) {
+                        CircularProgressIndicator(modifier = Modifier.size(16.dp), color = SpotifyGreen)
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text("Getting location...")
+                    }
                 }
 
                 Spacer(modifier = Modifier.height(16.dp))
-
                 Text("Or select manually:")
-
                 Spacer(modifier = Modifier.height(8.dp))
 
                 // Country Dropdown
                 ExposedDropdownMenuBox(
                     expanded = expanded,
-                    onExpandedChange = { expanded = !expanded }
+                    onExpandedChange = { expanded = !expanded && !editState.isLocationLoading }
                 ) {
                     OutlinedTextField(
                         value = selectedCountry.first,
                         onValueChange = {},
                         readOnly = true,
-                        trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
-                        modifier = Modifier
-                            .menuAnchor()
-                            .fillMaxWidth()
+                        enabled = !editState.isLocationLoading,
+                        trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded) },
+                        modifier = Modifier.menuAnchor().fillMaxWidth()
                     )
 
                     ExposedDropdownMenu(
@@ -570,35 +571,34 @@ fun LocationSelectionDialog(
 
                 Spacer(modifier = Modifier.height(16.dp))
 
-                // Maps Button
+                // Maps Reference Button
                 Button(
-                    onClick = {
-                        editProfileViewModel.openLocationSelector(context)
-                    },
+                    onClick = { editProfileViewModel.openLocationSelector(context) },
+                    enabled = !editState.isLocationLoading,
                     colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.secondary),
                     modifier = Modifier.fillMaxWidth()
                 ) {
-                    Icon(
-                        imageVector = Icons.Default.LocationOn,
-                        contentDescription = null,
-                        modifier = Modifier.size(16.dp)
-                    )
+                    Icon(Icons.Default.LocationOn, null, modifier = Modifier.size(16.dp))
                     Spacer(modifier = Modifier.width(8.dp))
-                    Text("Open Maps")
+                    Text("Open Maps for Reference")
                 }
             }
         },
         confirmButton = {
             TextButton(
-                onClick = {
-                    onLocationSelected(selectedCountry.second)
-                }
+                onClick = { onLocationSelected(selectedCountry.second) },
+                enabled = !editState.isLocationLoading
             ) {
                 Text("Update")
             }
         },
         dismissButton = {
-            TextButton(onClick = onDismiss) {
+            TextButton(
+                onClick = {
+                    if (editState.isLocationLoading) onCancelLocationRequest()
+                    onDismiss()
+                }
+            ) {
                 Text("Cancel")
             }
         }

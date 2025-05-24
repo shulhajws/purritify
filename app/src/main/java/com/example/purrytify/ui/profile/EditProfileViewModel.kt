@@ -58,20 +58,18 @@ class EditProfileViewModel(application: Application) : AndroidViewModel(applicat
         "Brazil" to "BR"
     )
 
+    private var locationTask: com.google.android.gms.tasks.Task<Location>? = null
+
     fun getCurrentLocation(context: Context, onLocationReceived: (String) -> Unit) {
         _state.value = _state.value.copy(isLocationLoading = true)
 
         try {
-            fusedLocationClient.lastLocation
+            locationTask = fusedLocationClient.lastLocation
                 .addOnSuccessListener { location: Location? ->
                     if (location != null) {
                         getAddressFromLocation(context, location.latitude, location.longitude, onLocationReceived)
                     } else {
-                        _state.value = _state.value.copy(
-                            isLocationLoading = false,
-                            error = "Unable to get current location"
-                        )
-                        Toast.makeText(context, "Unable to get current location", Toast.LENGTH_SHORT).show()
+                        requestFreshLocation(context, onLocationReceived)
                     }
                 }
                 .addOnFailureListener { exception ->
@@ -91,6 +89,55 @@ class EditProfileViewModel(application: Application) : AndroidViewModel(applicat
         }
     }
 
+    private fun requestFreshLocation(context: Context, onLocationReceived: (String) -> Unit) {
+        try {
+            val locationRequest = com.google.android.gms.location.LocationRequest.Builder(
+                com.google.android.gms.location.Priority.PRIORITY_HIGH_ACCURACY,
+                10000
+            ).setMaxUpdates(1)
+                .setWaitForAccurateLocation(false)
+                .build()
+
+            val locationCallback = object : com.google.android.gms.location.LocationCallback() {
+                override fun onLocationResult(locationResult: com.google.android.gms.location.LocationResult) {
+                    locationResult.lastLocation?.let { location ->
+                        getAddressFromLocation(context, location.latitude, location.longitude, onLocationReceived)
+                        fusedLocationClient.removeLocationUpdates(this)
+                    }
+                }
+            }
+
+            fusedLocationClient.requestLocationUpdates(locationRequest, locationCallback, null)
+
+            android.os.Handler(android.os.Looper.getMainLooper()).postDelayed({
+                fusedLocationClient.removeLocationUpdates(locationCallback)
+                if (_state.value.isLocationLoading) {
+                    _state.value = _state.value.copy(
+                        isLocationLoading = false,
+                        error = "Location request timed out"
+                    )
+                    Toast.makeText(context, "Location request timed out", Toast.LENGTH_SHORT).show()
+                }
+            }, 10000)
+
+        } catch (e: SecurityException) {
+            _state.value = _state.value.copy(
+                isLocationLoading = false,
+                error = "Location permission not granted"
+            )
+            Toast.makeText(context, "Location permission required", Toast.LENGTH_SHORT).show()
+        }
+    }
+
+    fun cancelLocationRequest() {
+        locationTask?.let {
+            if (!it.isComplete) {
+                it.isCanceled
+            }
+        }
+        _state.value = _state.value.copy(isLocationLoading = false)
+    }
+
     private fun getAddressFromLocation(context: Context, latitude: Double, longitude: Double, onLocationReceived: (String) -> Unit) {
         try {
             val geocoder = Geocoder(context, Locale.getDefault())
@@ -100,10 +147,11 @@ class EditProfileViewModel(application: Application) : AndroidViewModel(applicat
                         val address = addresses[0]
                         val countryName = address.countryName
                         val countryCode = countryCodes[countryName] ?: "ID"
+                        val cityName = address.adminArea ?: "Purry City"
 
                         _state.value = _state.value.copy(
                             isLocationLoading = false,
-                            currentLocation = countryCode
+                            currentLocation = "$cityName, $countryName"
                         )
                         onLocationReceived(countryCode)
                     } else {
@@ -147,14 +195,15 @@ class EditProfileViewModel(application: Application) : AndroidViewModel(applicat
 
     fun openLocationSelector(context: Context) {
         try {
-            val intent = Intent(Intent.ACTION_VIEW, android.net.Uri.parse("geo:0,0?q="))
+            val intent = Intent(Intent.ACTION_VIEW, android.net.Uri.parse("geo:0,0?q=$_state.value.currentLocation"))
             intent.setPackage("com.google.android.apps.maps")
 
             if (intent.resolveActivity(context.packageManager) != null) {
                 context.startActivity(intent)
             } else {
-                val webIntent = Intent(Intent.ACTION_VIEW, android.net.Uri.parse("https://www.google.com/maps"))
+                val webIntent = Intent(Intent.ACTION_VIEW, android.net.Uri.parse("https://maps.google.com/?q=current+location"))
                 context.startActivity(webIntent)
+                Toast.makeText(context, "Select your location in the browser, then come back to manually select the country", Toast.LENGTH_LONG).show()
             }
         } catch (e: Exception) {
             Toast.makeText(context, "Unable to open maps", Toast.LENGTH_SHORT).show()
@@ -233,28 +282,39 @@ class EditProfileViewModel(application: Application) : AndroidViewModel(applicat
                         call: Call<com.example.purrytify.network.UserProfileResponse>,
                         response: Response<com.example.purrytify.network.UserProfileResponse>
                     ) {
+                        Log.d("EditProfileViewModel", "Response code: ${response.code()}")
+                        Log.d("EditProfileViewModel", "Response body: ${response.body()}")
+
                         _state.value = _state.value.copy(isUpdatingProfile = false)
 
                         if (response.isSuccessful) {
-                            response.body()?.let { profileResponse ->
-                                // Ensure no null values
-                                val updatedProfile = UserProfile(
-                                    id = profileResponse.id ?: "",
-                                    username = profileResponse.username ?: "",
-                                    email = profileResponse.email ?: "",
-                                    profilePhoto = if (!profileResponse.profilePhoto.isNullOrEmpty()) {
-                                        "${RetrofitClient.getBaseUrl()}/uploads/profile-picture/${profileResponse.profilePhoto}"
+                            viewModelScope.launch {
+                                try {
+                                    val token = TokenManager.getToken(context)
+                                    if (!token.isNullOrEmpty()) {
+                                        val freshProfile = RetrofitClient.instance.getProfile("Bearer $token")
+                                        val updatedProfile = UserProfile(
+                                            id = freshProfile.id ?: "",
+                                            username = freshProfile.username ?: "",
+                                            email = freshProfile.email ?: "",
+                                            profilePhoto = if (!freshProfile.profilePhoto.isNullOrEmpty()) {
+                                                "${RetrofitClient.getBaseUrl()}/uploads/profile-picture/${freshProfile.profilePhoto}"
+                                            } else {
+                                                ""
+                                            },
+                                            location = freshProfile.location ?: "",
+                                            createdAt = freshProfile.createdAt ?: "",
+                                            updatedAt = freshProfile.updatedAt ?: ""
+                                        )
+                                        onSuccess(updatedProfile)
+                                        Toast.makeText(context, "Profile updated successfully", Toast.LENGTH_SHORT).show()
                                     } else {
-                                        ""
-                                    },
-                                    location = profileResponse.location ?: "",
-                                    createdAt = profileResponse.createdAt ?: "",
-                                    updatedAt = profileResponse.updatedAt ?: ""
-                                )
-                                onSuccess(updatedProfile)
-                                Toast.makeText(context, "Profile updated successfully", Toast.LENGTH_SHORT).show()
-                            } ?: run {
-                                onError("Empty response from server")
+                                        onError("Authentication failed")
+                                    }
+                                } catch (e: Exception) {
+                                    Log.e("EditProfileViewModel", "Error fetching updated profile", e)
+                                    onError("Update successful, but failed to refresh profile data")
+                                }
                             }
                         } else {
                             val errorMessage = when (response.code()) {
