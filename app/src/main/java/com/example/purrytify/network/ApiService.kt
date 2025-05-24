@@ -1,6 +1,5 @@
 package com.example.purrytify.network
 
-import com.example.purrytify.model.Song
 import retrofit2.Call
 import retrofit2.http.Body
 import retrofit2.http.GET
