@@ -13,6 +13,7 @@ import androidx.lifecycle.viewModelScope
 import com.example.purrytify.data.AppDatabase
 import com.example.purrytify.data.mapper.SongMapper
 import com.example.purrytify.model.Song
+import com.example.purrytify.repository.AnalyticsRepository
 import com.example.purrytify.repository.SongRepository
 import com.example.purrytify.util.AudioRouteManager
 import com.example.purrytify.util.EventBus
@@ -31,6 +32,14 @@ class PlayerViewModel(application: Application) : AndroidViewModel(application) 
     private val repository: SongRepository
     private var allSongs: List<Song> = emptyList()
     private var currentIndex = 0
+    private var currentUserId: Int? = null
+
+    private val analyticsRepository: AnalyticsRepository
+    private var currentSessionId: Long? = null
+    private var sessionStartTime: Long = 0
+    private var totalPausedDuration: Long = 0
+    private var lastPauseTime: Long = 0
+    private var wasPlayingBeforePause = false
 
     private val songQueue = mutableListOf<Song>()
     private val _queue = MutableStateFlow<List<Song>>(emptyList())
@@ -62,7 +71,6 @@ class PlayerViewModel(application: Application) : AndroidViewModel(application) 
     private val _duration = MutableStateFlow(0)
     val duration: StateFlow<Int> = _duration
 
-    private var currentUserId: Int? = null
 
     private var audioRouteManager: AudioRouteManager? = null
 
@@ -88,9 +96,8 @@ class PlayerViewModel(application: Application) : AndroidViewModel(application) 
     init {
         val database = AppDatabase.getDatabase(application)
         repository = SongRepository(database.songDao())
+        analyticsRepository = AnalyticsRepository(database.analyticsDao(), database.songDao())
         _isLoading.value = true
-
-        // Initialize Audio Route Manager
         audioRouteManager = AudioRouteManager(application.applicationContext)
 
         // Song Deletion
@@ -225,6 +232,14 @@ class PlayerViewModel(application: Application) : AndroidViewModel(application) 
     }
 
     fun playSong(song: Song) {
+        Log.d("PlayerViewModel", "playSong called for: ${song.title}")
+
+        val currentSongId = _currentSong.value?.id
+        if (currentSongId != null && currentSongId != song.id) {
+            Log.d("PlayerViewModel", "Switching songs, ending previous session")
+            endCurrentSession()
+        }
+
         stopCurrentSong()
         _currentSong.value = song
         _isLiked.value = song.isLiked
@@ -280,13 +295,14 @@ class PlayerViewModel(application: Application) : AndroidViewModel(application) 
                     else {
                         setDataSource(song.audioUrl)
                     }
-                    prepareAsync()
+
                     setOnPreparedListener {
                         _duration.value = it.duration
                         _currentPosition.value = 0
                         _isPlaying.value = true
                         it.start()
                         handler.post(updateProgressRunnable)
+                        startAnalyticsSession(song)
                     }
                     setOnErrorListener { _, what, extra ->
                         Log.e("PlayerViewModel", "MediaPlayer error: what=$what, extra=$extra")
@@ -298,6 +314,8 @@ class PlayerViewModel(application: Application) : AndroidViewModel(application) 
                         handler.removeCallbacks(updateProgressRunnable)
                         handleSongCompletion()
                     }
+                    prepareAsync()
+
                 } catch (e: SecurityException) {
                     Log.e("PlayerViewModel", "Security exception: ${e.message}")
                     showToast("Permission denied. Please grant storage permission.")
@@ -320,6 +338,34 @@ class PlayerViewModel(application: Application) : AndroidViewModel(application) 
     }
 
     private fun handleSongCompletion() {
+        Log.d("PlayerViewModel", "Song completed")
+
+        currentSessionId?.let { sessionId ->
+            viewModelScope.launch {
+                try {
+                    val totalSessionDuration = System.currentTimeMillis() - sessionStartTime
+                    val actualListenTime = maxOf(0, totalSessionDuration - totalPausedDuration)
+
+                    analyticsRepository.updateListeningSession(
+                        sessionId = sessionId,
+                        actualListenDurationMs = actualListenTime,
+                        wasCompleted = true
+                    )
+
+                    Log.d("PlayerViewModel", "Song completed - ended analytics session: $sessionId, duration: ${actualListenTime}ms")
+
+                    currentSessionId = null
+                    sessionStartTime = 0
+                    totalPausedDuration = 0
+                    lastPauseTime = 0
+                    wasPlayingBeforePause = false
+
+                } catch (e: Exception) {
+                    Log.e("PlayerViewModel", "Error ending completed session: ${e.message}")
+                }
+            }
+        }
+
         when (_repeatMode.value) {
             RepeatMode.REPEAT_ONE -> {
                 _currentSong.value?.let { playSong(it) }
@@ -363,10 +409,20 @@ class PlayerViewModel(application: Application) : AndroidViewModel(application) 
                 it.pause()
                 _isPlaying.value = false
                 handler.removeCallbacks(updateProgressRunnable)
+
+                lastPauseTime = System.currentTimeMillis()
+                wasPlayingBeforePause = true
+                Log.d("PlayerViewModel", "Song paused, recording pause time")
             } else {
                 it.start()
                 _isPlaying.value = true
                 handler.post(updateProgressRunnable)
+
+                if (wasPlayingBeforePause && lastPauseTime > 0) {
+                    totalPausedDuration += System.currentTimeMillis() - lastPauseTime
+                    wasPlayingBeforePause = false
+                }
+                Log.d("PlayerViewModel", "Song resumed, pause duration: ${totalPausedDuration}ms")
             }
         }
     }
@@ -474,6 +530,11 @@ class PlayerViewModel(application: Application) : AndroidViewModel(application) 
     }
 
     private fun stopCurrentSong() {
+        if (mediaPlayer != null && currentSessionId != null) {
+            Log.d("PlayerViewModel", "Stopping current song, ending analytics session")
+            endCurrentSession()
+        }
+
         mediaPlayer?.apply {
             if (isPlaying) {
                 stop()
@@ -574,15 +635,96 @@ class PlayerViewModel(application: Application) : AndroidViewModel(application) 
         _repeatMode.value = nextMode
     }
 
+    private fun startAnalyticsSession(song: Song) {
+        val userId = currentUserId ?: return
+
+        viewModelScope.launch {
+            try {
+                sessionStartTime = System.currentTimeMillis()
+                totalPausedDuration = 0
+                lastPauseTime = 0
+                wasPlayingBeforePause = false
+
+                currentSessionId = analyticsRepository.startListeningSession(
+                    userId = userId,
+                    songId = song.id.toLong()
+                )
+
+                Log.d("PlayerViewModel", "Started analytics session: $currentSessionId for song: ${song.title}")
+            } catch (e: Exception) {
+                Log.e("PlayerViewModel", "Error starting analytics session: ${e.message}")
+            }
+        }
+    }
+
+    private fun endCurrentSession() {
+        val sessionId = currentSessionId ?: return
+
+        viewModelScope.launch {
+            try {
+                val currentTime = System.currentTimeMillis()
+                val totalSessionDuration = currentTime - sessionStartTime
+
+                // If currently paused, add the current pause duration
+                val finalPausedDuration = if (lastPauseTime > 0 && wasPlayingBeforePause) {
+                    totalPausedDuration + (currentTime - lastPauseTime)
+                } else {
+                    totalPausedDuration
+                }
+
+                // Calculate actual listen time (total session time minus paused time)
+                val actualListenTime = maxOf(0, totalSessionDuration - finalPausedDuration)
+
+                // Consider session completed if they listened to at least 30 seconds or 50% of song
+                val songDuration = _duration.value.toLong()
+                val completionThreshold = minOf(30000L, songDuration / 2) // 30 seconds or 50% of song
+                val wasCompleted = actualListenTime >= completionThreshold
+
+                analyticsRepository.updateListeningSession(
+                    sessionId = sessionId,
+                    actualListenDurationMs = actualListenTime,
+                    wasCompleted = wasCompleted
+                )
+
+                Log.d("PlayerViewModel", "Ended analytics session: $sessionId, duration: ${actualListenTime}ms, completed: $wasCompleted")
+
+                currentSessionId = null
+                sessionStartTime = 0
+                totalPausedDuration = 0
+                lastPauseTime = 0
+                wasPlayingBeforePause = false
+
+            } catch (e: Exception) {
+                Log.e("PlayerViewModel", "Error ending analytics session: ${e.message}")
+            }
+        }
+    }
+
+    fun getAnalyticsRepository(): AnalyticsRepository {
+        return analyticsRepository
+    }
+
     fun getAudioRouteManager(): AudioRouteManager? {
         return audioRouteManager
     }
 
     override fun onCleared() {
         super.onCleared()
-        stopCurrentSong()
 
+        if (currentSessionId != null) {
+            Log.d("PlayerViewModel", "ViewModel cleared, ending active session")
+            endCurrentSession()
+        }
+
+        stopCurrentSong()
         audioRouteManager?.cleanup()
         audioRouteManager = null
+    }
+
+    fun forceEndCurrentSession() {
+        if (currentSessionId != null) {
+            Log.d("PlayerViewModel", "Force ending current session")
+            endCurrentSession()
+        }
     }
 }

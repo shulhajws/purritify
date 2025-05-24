@@ -52,10 +52,11 @@ class SoundCapsuleViewModel(application: Application) : AndroidViewModel(applica
 
         viewModelScope.launch {
             _state.update { it.copy(isLoading = true) }
+            Log.d("SoundCapsuleViewModel", "Starting to load available months...")
 
             try {
-                // Load available months
                 val availableMonths = analyticsRepository.getAvailableMonths(userId)
+                Log.d("SoundCapsuleViewModel", "Found ${availableMonths.size} available months: $availableMonths")
 
                 // Select current month by default
                 val calendar = Calendar.getInstance()
@@ -70,26 +71,32 @@ class SoundCapsuleViewModel(application: Application) : AndroidViewModel(applica
                     availableMonths.firstOrNull()
                 }
 
+                Log.d("SoundCapsuleViewModel", "Selected month: $selectedMonth")
+
                 _state.update {
                     it.copy(
                         availableMonths = availableMonths,
                         selectedMonth = selectedMonth,
-                        isLoading = false
+                        isLoading = false,
+                        error = null
                     )
                 }
 
                 // Load analytics for selected month
-                selectedMonth?.let { loadAnalyticsForMonth(it) }
+                selectedMonth?.let {
+                    Log.d("SoundCapsuleViewModel", "Loading analytics for selected month: $it")
+                    loadAnalyticsForMonth(it)
+                }
 
                 // Start observing current month listen time for real-time updates
                 observeCurrentMonthListenTime(userId)
 
             } catch (e: Exception) {
-                Log.e("SoundCapsuleViewModel", "Error loading data: ${e.message}")
+                Log.e("SoundCapsuleViewModel", "Error loading data: ${e.message}", e)
                 _state.update {
                     it.copy(
                         isLoading = false,
-                        error = "Failed to load analytics data"
+                        error = "Failed to load analytics data: ${e.message}"
                     )
                 }
             }
