@@ -1,5 +1,6 @@
 package com.example.purrytify.repository
 
+import android.util.Log
 import com.example.purrytify.data.dao.AnalyticsDao
 import com.example.purrytify.data.dao.DayStreakSongData
 import com.example.purrytify.data.dao.SongDao
@@ -166,7 +167,6 @@ class AnalyticsRepository(
             }
         }
 
-        // don't forget the last streak
         if (currentLength >= 2) {
             streaks.add(StreakInfo(currentLength, currentStreakStart, currentStreakEnd))
         }
@@ -175,7 +175,6 @@ class AnalyticsRepository(
     }
 
     // Helper Functions
-
     // Parse Date String To Date Object
     private fun parseDate(dateString: String): Date {
         return dateFormat.parse(dateString) ?: Date()
@@ -184,6 +183,7 @@ class AnalyticsRepository(
     // Data Retrieval
     // Get Available Months For User
     suspend fun getAvailableMonths(userId: Int): List<MonthYear> {
+        Log.d("AnalyticsRepository", "Getting Available Months")
         return analyticsDao.getAvailableMonths(userId).map {
             MonthYear(it.year, it.month)
         }
@@ -197,7 +197,7 @@ class AnalyticsRepository(
 
         val dailyData = mutableListOf<DailyListenData>()
 
-        // get listen time for each day
+        // Listen Time Each Day
         for (day in 1..daysInMonth) {
             calendar.set(Calendar.DAY_OF_MONTH, day)
             val dateString = dateFormat.format(calendar.time)
@@ -265,7 +265,6 @@ class AnalyticsRepository(
     }
 
     // Format Time Duration For Display
-    // Format Time Duration For Display
     fun formatDuration(milliseconds: Long): String {
         val totalSeconds = milliseconds / 1000
         val hours = totalSeconds / 3600
@@ -330,16 +329,16 @@ data class MonthYear(
 }
 
 data class DailyListenData(
-    val day: Int, // day of month (1-31)
-    val dateString: String, // "yyyy-MM-dd"
-    val listenTimeMinutes: Int // listen time in minutes for this day
+    val day: Int,
+    val dateString: String,
+    val listenTimeMinutes: Int
 )
 
 data class AnalyticsExportData(
     val year: Int,
     val month: Int,
     val monthName: String,
-    val totalListenTimeMinutes: Long, // changed to minutes for display
+    val totalListenTimeMinutes: Long,
     val totalListenTimeFormatted: String,
     val topArtists: List<TopArtistData>,
     val topSongs: List<TopSongData>,
