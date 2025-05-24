@@ -97,7 +97,6 @@ class PlayerViewModel(application: Application) : AndroidViewModel(application) 
     private val analyticsUpdateRunnable = object : Runnable {
         override fun run() {
             updateCurrentSessionInRealTime()
-            // Update every 5 seconds while playing
             if (_isPlaying.value && currentSessionId != null) {
                 analyticsUpdateHandler.postDelayed(this, 30000)
             }
@@ -831,12 +830,5 @@ class PlayerViewModel(application: Application) : AndroidViewModel(application) 
         stopCurrentSong()
         audioRouteManager?.cleanup()
         audioRouteManager = null
-    }
-
-    fun forceEndCurrentSession() {
-        if (currentSessionId != null) {
-            Log.d("PlayerViewModel", "Force ending current session")
-            endCurrentSession()
-        }
     }
 }

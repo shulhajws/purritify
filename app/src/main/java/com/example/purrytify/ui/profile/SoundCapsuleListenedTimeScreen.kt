@@ -120,7 +120,6 @@ fun ListenTimeSoundCapsuleScreen(
                 item {
                     Spacer(modifier = Modifier.height(16.dp))
 
-                    // Daily Chart Section
                     DailyChartSection(
                         monthYear = monthYear,
                         analytics = state.analytics,
@@ -130,7 +129,6 @@ fun ListenTimeSoundCapsuleScreen(
 
                 state.analytics?.let { analytics ->
                     item {
-                        // Additional Statistics
                         AdditionalListeningStats(
                             analytics = analytics,
                             viewModel = viewModel
@@ -167,7 +165,7 @@ fun DailyChartSection(
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // Chart placeholder - In a real implementation, you'd use a charting library
+            // TODO: Chart placeholder - use a charting library
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -182,7 +180,6 @@ fun DailyChartSection(
                     Column(
                         horizontalAlignment = Alignment.CenterHorizontally
                     ) {
-                        // Simple visual representation
                         Row(
                             modifier = Modifier.fillMaxWidth(),
                             horizontalArrangement = Arrangement.SpaceEvenly,
@@ -314,13 +311,13 @@ fun AdditionalListeningStats(
                 ) {
                     StatItem(
                         label = "Total Minutes",
-                        value = "${analytics.totalListenTimeMinutes}",
+                        value = "${analytics.totalListenTimeMinutes}m",
                         modifier = Modifier.weight(1f)
                     )
 
                     StatItem(
                         label = "Daily Average",
-                        value = "${String.format("%.1f", analytics.dailyAverageMinutes)}",
+                        value = "${String.format("%.1f", analytics.dailyAverageMinutes)}m",
                         modifier = Modifier.weight(1f)
                     )
                 }

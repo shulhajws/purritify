@@ -409,7 +409,3 @@ class SoundCapsuleViewModel(application: Application) : AndroidViewModel(applica
         realTimeUpdateJob?.cancel()
     }
 }
-
-enum class ExportFormat {
-    CSV, PDF
-}

@@ -81,7 +81,6 @@ fun TopArtistsSoundCapsuleScreen(
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
                 item {
-                    // Month Info and Summary
                     MonthSummaryHeader(
                         monthYear = monthYear,
                         analytics = state.analytics
@@ -93,7 +92,7 @@ fun TopArtistsSoundCapsuleScreen(
                         item {
                             Text(
                                 text = "Your top artists this month:",
-                                style = MaterialTheme.typography.titleMedium,
+                                style = MaterialTheme.typography.headlineSmall,
                                 color = Color.White.copy(alpha = 0.8f),
                                 modifier = Modifier.padding(vertical = 8.dp)
                             )
@@ -147,7 +146,7 @@ fun MonthSummaryHeader(
                 Text(
                     text = "${it.uniqueArtistsCount} artists",
                     style = MaterialTheme.typography.headlineMedium,
-                    color = Color(0xFF4FC3F7), // Light blue color like in the image
+                    color = Blue,
                     fontWeight = FontWeight.Bold,
                     modifier = Modifier.alignBy(FirstBaseline)
                 )
@@ -272,7 +271,7 @@ fun TopArtistItem(
                         else -> Icons.Default.MusicNote
                     },
                     contentDescription = null,
-                    tint = Color(0xFFFFD700), // Gold color for top 3
+                    tint = Color(0xFFFFD700),
                     modifier = Modifier.size(20.dp)
                 )
             }
