@@ -188,16 +188,15 @@ fun MonthAnalyticsCard(
     onTopArtistsClick: () -> Unit,
     onTopSongsClick: () -> Unit
 ) {
-    var analytics by remember { mutableStateOf<MonthlyAnalytics?>(null) }
     val state by viewModel.state.collectAsState()
 
-    LaunchedEffect(monthYear) {
-        viewModel.selectMonth(monthYear)
+    val analytics = remember(state.analytics, state.selectedMonth) {
+        if (state.selectedMonth == monthYear) state.analytics else viewModel.getAnalyticsForMonth(monthYear)
     }
 
-    LaunchedEffect(state.analytics, state.selectedMonth) {
-        if (state.selectedMonth == monthYear) {
-            analytics = state.analytics
+    LaunchedEffect(monthYear) {
+        if (viewModel.getAnalyticsForMonth(monthYear) == null && state.selectedMonth != monthYear) {
+            viewModel.selectMonth(monthYear)
         }
     }
 
@@ -241,7 +240,7 @@ fun MonthAnalyticsCard(
             Spacer(modifier = Modifier.height(16.dp))
 
             if (analytics != null) {
-                val data = analytics!!
+                val data = analytics
 
                 // Time Listened Section
                 TimeListenedSection(

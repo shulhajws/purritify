@@ -40,6 +40,7 @@ class SoundCapsuleViewModel(application: Application) : AndroidViewModel(applica
 
     private var currentUserId: Int? = null
     private val monthlyAnalyticsCache = mutableMapOf<MonthYear, MonthlyAnalytics>()
+    private var realTimeUpdateJob: kotlinx.coroutines.Job? = null
 
     init {
         val database = AppDatabase.getDatabase(application)
@@ -49,6 +50,8 @@ class SoundCapsuleViewModel(application: Application) : AndroidViewModel(applica
     fun updateForUser(userId: Int) {
         if (currentUserId == userId) return
         currentUserId = userId
+
+        realTimeUpdateJob?.cancel()
 
         viewModelScope.launch {
             _state.update { it.copy(isLoading = true) }
@@ -82,14 +85,12 @@ class SoundCapsuleViewModel(application: Application) : AndroidViewModel(applica
                     )
                 }
 
-                // Load analytics for selected month
                 selectedMonth?.let {
                     Log.d("SoundCapsuleViewModel", "Loading analytics for selected month: $it")
                     loadAnalyticsForMonth(it)
                 }
 
-                // Start observing current month listen time for real-time updates
-                observeCurrentMonthListenTime(userId)
+                startRealTimeUpdates(userId)
 
             } catch (e: Exception) {
                 Log.e("SoundCapsuleViewModel", "Error loading data: ${e.message}", e)
@@ -103,15 +104,21 @@ class SoundCapsuleViewModel(application: Application) : AndroidViewModel(applica
         }
     }
 
-    private fun observeCurrentMonthListenTime(userId: Int) {
-        viewModelScope.launch {
-            // Use a faster update interval for real-time updates
+    private fun startRealTimeUpdates(userId: Int) {
+        realTimeUpdateJob?.cancel()
+
+        realTimeUpdateJob = viewModelScope.launch {
             while (true) {
                 try {
-                    val listenTime = analyticsRepository.getCurrentMonthListenTime(userId)
-                    _state.update { it.copy(currentMonthListenTime = listenTime) }
+                    val currentListenTime = analyticsRepository.getCurrentMonthListenTime(userId)
 
-                    // Refresh current month analytics if it's selected
+                    // Update if Changes Exist
+                    if (_state.value.currentMonthListenTime != currentListenTime) {
+                        _state.update { it.copy(currentMonthListenTime = currentListenTime) }
+                        Log.d("SoundCapsuleViewModel", "Updated current month listen time: $currentListenTime minutes")
+                    }
+
+                    // Only Check Current Month
                     val currentCalendar = Calendar.getInstance()
                     val currentMonth = MonthYear(
                         currentCalendar.get(Calendar.YEAR),
@@ -119,29 +126,52 @@ class SoundCapsuleViewModel(application: Application) : AndroidViewModel(applica
                     )
 
                     if (_state.value.selectedMonth == currentMonth) {
-                        // Clear cache for current month to force reload
-                        monthlyAnalyticsCache.remove(currentMonth)
-                        loadAnalyticsForMonth(currentMonth)
+                        // Fresh Analytics
+                        val freshAnalytics = analyticsRepository.getMonthlyAnalytics(
+                            userId,
+                            currentMonth.year,
+                            currentMonth.month
+                        )
+
+                        // Current Analytics
+                        val currentAnalytics = _state.value.analytics
+                        if (currentAnalytics == null || hasAnalyticsChanged(currentAnalytics, freshAnalytics)) {
+                            monthlyAnalyticsCache[currentMonth] = freshAnalytics
+                            _state.update {
+                                it.copy(analytics = freshAnalytics)
+                            }
+                            Log.d("SoundCapsuleViewModel", "Updated analytics for current month")
+                        }
                     }
+
                 } catch (e: Exception) {
-                    Log.e("SoundCapsuleViewModel", "Error updating real-time analytics: ${e.message}")
+                    Log.e("SoundCapsuleViewModel", "Error in real-time update: ${e.message}")
                 }
 
-                // Update every 3 seconds for real-time feel
-                kotlinx.coroutines.delay(3000)
+                kotlinx.coroutines.delay(30_000)
             }
         }
     }
 
+    private fun hasAnalyticsChanged(old: MonthlyAnalytics, new: MonthlyAnalytics): Boolean {
+        return old.totalListenTimeMinutes != new.totalListenTimeMinutes ||
+                old.uniqueArtistsCount != new.uniqueArtistsCount ||
+                old.uniqueSongsCount != new.uniqueSongsCount ||
+                old.topArtists.size != new.topArtists.size ||
+                old.topSongs.size != new.topSongs.size ||
+                old.dayStreakSongs.size != new.dayStreakSongs.size
+    }
+
     fun selectMonth(monthYear: MonthYear) {
-        _state.update { it.copy(selectedMonth = monthYear) }
-        loadAnalyticsForMonth(monthYear)
+        if (_state.value.selectedMonth != monthYear) {
+            _state.update { it.copy(selectedMonth = monthYear) }
+            loadAnalyticsForMonth(monthYear)
+        }
     }
 
     private fun loadAnalyticsForMonth(monthYear: MonthYear) {
         val userId = currentUserId ?: return
 
-        // Check cache first
         monthlyAnalyticsCache[monthYear]?.let { cachedAnalytics ->
             _state.update {
                 it.copy(
@@ -164,7 +194,6 @@ class SoundCapsuleViewModel(application: Application) : AndroidViewModel(applica
                     monthYear.month
                 )
 
-                // Cache the result
                 monthlyAnalyticsCache[monthYear] = analytics
 
                 _state.update {
@@ -201,8 +230,7 @@ class SoundCapsuleViewModel(application: Application) : AndroidViewModel(applica
         }
     }
 
-    // Method to get cached analytics for a specific month (useful for UI components)
-    fun getAnalyticsForMonth(monthYear: MonthYear): com.example.purrytify.repository.MonthlyAnalytics? {
+    fun getAnalyticsForMonth(monthYear: MonthYear): MonthlyAnalytics? {
         return monthlyAnalyticsCache[monthYear]
     }
 
@@ -367,6 +395,11 @@ class SoundCapsuleViewModel(application: Application) : AndroidViewModel(applica
 
     fun formatMinutesToReadable(minutes: Long): String {
         return analyticsRepository.formatMinutesToReadable(minutes)
+    }
+
+    override fun onCleared() {
+        super.onCleared()
+        realTimeUpdateJob?.cancel()
     }
 }
 
