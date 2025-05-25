@@ -115,6 +115,9 @@ dependencies {
     // Google Play Services Location for location access
     implementation("com.google.android.gms:play-services-location:21.0.1")
 
+    // Google Places API for location picker
+    implementation("com.google.android.libraries.places:places:3.3.0")
+
     // OkHttp for download functionality
     implementation("com.squareup.okhttp3:okhttp:4.12.0")
 
