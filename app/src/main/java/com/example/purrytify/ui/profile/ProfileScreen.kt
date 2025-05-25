@@ -586,8 +586,16 @@ fun LocationSelectionDialog(
                 ) {
                     Icon(Icons.Default.LocationOn, null, modifier = Modifier.size(16.dp))
                     Spacer(modifier = Modifier.width(8.dp))
-                    Text("Open Maps for Reference")
+                    Text("Explore in Google Maps")
                 }
+
+                Spacer(modifier = Modifier.height(8.dp))
+
+                Text(
+                    text = "💡 Tip: Use Maps to confirm your location, then select your country from the dropdown above",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
+                )
             }
         },
         confirmButton = {

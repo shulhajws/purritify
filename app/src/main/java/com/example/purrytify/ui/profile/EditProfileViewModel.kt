@@ -194,7 +194,8 @@ class EditProfileViewModel(application: Application) : AndroidViewModel(applicat
 
     fun openLocationSelector(context: Context) {
         try {
-            val intent = Intent(Intent.ACTION_VIEW, Uri.parse("geo:0,0?q=current+location"))
+            val currentLocation = _state.value.currentLocation
+            val intent = Intent(Intent.ACTION_VIEW, Uri.parse("geo:0,0?q=$currentLocation"))
             intent.setPackage("com.google.android.apps.maps")
 
             if (intent.resolveActivity(context.packageManager) != null) {
@@ -293,17 +294,17 @@ class EditProfileViewModel(application: Application) : AndroidViewModel(applicat
                                     if (!token.isNullOrEmpty()) {
                                         val freshProfile = RetrofitClient.instance.getProfile("Bearer $token")
                                         val updatedProfile = UserProfile(
-                                            id = freshProfile.id ?: "",
-                                            username = freshProfile.username ?: "",
-                                            email = freshProfile.email ?: "",
-                                            profilePhoto = if (!freshProfile.profilePhoto.isNullOrEmpty()) {
+                                            id = freshProfile.id,
+                                            username = freshProfile.username,
+                                            email = freshProfile.email,
+                                            profilePhoto = if (freshProfile.profilePhoto.isNotEmpty()) {
                                                 "${RetrofitClient.getBaseUrl()}/uploads/profile-picture/${freshProfile.profilePhoto}"
                                             } else {
                                                 ""
                                             },
-                                            location = freshProfile.location ?: "",
-                                            createdAt = freshProfile.createdAt ?: "",
-                                            updatedAt = freshProfile.updatedAt ?: ""
+                                            location = freshProfile.location,
+                                            createdAt = freshProfile.createdAt,
+                                            updatedAt = freshProfile.updatedAt
                                         )
                                         onSuccess(updatedProfile)
                                         Toast.makeText(context, "Profile updated successfully", Toast.LENGTH_SHORT).show()
