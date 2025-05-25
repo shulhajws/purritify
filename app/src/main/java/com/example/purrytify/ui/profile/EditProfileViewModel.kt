@@ -147,11 +147,10 @@ class EditProfileViewModel(application: Application) : AndroidViewModel(applicat
                         val address = addresses[0]
                         val countryName = address.countryName
                         val countryCode = countryCodes[countryName] ?: "ID"
-                        val cityName = address.adminArea ?: "Purry City"
 
                         _state.value = _state.value.copy(
                             isLocationLoading = false,
-                            currentLocation = "$cityName, $countryName"
+                            currentLocation = countryCode
                         )
                         onLocationReceived(countryCode)
                     } else {
@@ -195,13 +194,13 @@ class EditProfileViewModel(application: Application) : AndroidViewModel(applicat
 
     fun openLocationSelector(context: Context) {
         try {
-            val intent = Intent(Intent.ACTION_VIEW, android.net.Uri.parse("geo:0,0?q=$_state.value.currentLocation"))
+            val intent = Intent(Intent.ACTION_VIEW, Uri.parse("geo:0,0?q=current+location"))
             intent.setPackage("com.google.android.apps.maps")
 
             if (intent.resolveActivity(context.packageManager) != null) {
                 context.startActivity(intent)
             } else {
-                val webIntent = Intent(Intent.ACTION_VIEW, android.net.Uri.parse("https://maps.google.com/?q=current+location"))
+                val webIntent = Intent(Intent.ACTION_VIEW, Uri.parse("https://maps.google.com/?q=current+location"))
                 context.startActivity(webIntent)
                 Toast.makeText(context, "Select your location in the browser, then come back to manually select the country", Toast.LENGTH_LONG).show()
             }

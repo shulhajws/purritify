@@ -6,6 +6,7 @@ import android.content.Intent
 import android.content.pm.PackageManager
 import android.net.Uri
 import android.os.Build
+import android.provider.MediaStore
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -41,6 +42,7 @@ import androidx.compose.material3.ExposedDropdownMenuBox
 import androidx.compose.material3.ExposedDropdownMenuDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.MenuAnchorType
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -70,10 +72,10 @@ import com.example.purrytify.ui.login.LoginActivity
 import com.example.purrytify.ui.theme.DarkBlack
 import com.example.purrytify.ui.theme.SoftGray
 import com.example.purrytify.ui.theme.SpotifyGreen
+import com.example.purrytify.ui.theme.Turquoise
 import com.example.purrytify.ui.theme.White
 import com.example.purrytify.util.TokenManager
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ProfileScreen(
     userProfile: UserProfile,
@@ -90,11 +92,11 @@ fun ProfileScreen(
     )
     val editState by editProfileViewModel.state.collectAsState()
 
-    // Dialog states
+    // Dialog States
     var showImagePickerDialog by remember { mutableStateOf(false) }
     var showLocationDialog by remember { mutableStateOf(false) }
 
-    // Image picker launchers
+    // Image Picker Launcher
     val galleryLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetContent()
     ) { uri: Uri? ->
@@ -112,6 +114,7 @@ fun ProfileScreen(
         }
     }
 
+    // Camera Launcher
     val cameraLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.TakePicture()
     ) { success: Boolean ->
@@ -131,7 +134,7 @@ fun ProfileScreen(
         }
     }
 
-    // Permission launchers
+    // Permission Launchers
     val locationPermissionLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.RequestMultiplePermissions()
     ) { permissions ->
@@ -162,8 +165,12 @@ fun ProfileScreen(
         if (isGranted) {
             val cameraIntent = editProfileViewModel.createImageCaptureIntent(context)
             cameraIntent?.let { intent ->
-                // Get the photo URI from the intent
-                val photoUri = intent.getParcelableExtra<Uri>(android.provider.MediaStore.EXTRA_OUTPUT)
+                val photoUri = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                    intent.getParcelableExtra(MediaStore.EXTRA_OUTPUT, Uri::class.java)
+                } else {
+                    @Suppress("DEPRECATION")
+                    intent.getParcelableExtra(MediaStore.EXTRA_OUTPUT)
+                }
                 photoUri?.let {
                     editProfileViewModel.setSelectedImageUri(it)
                     cameraLauncher.launch(it)
@@ -174,18 +181,12 @@ fun ProfileScreen(
         }
     }
 
-    // Theme colors
-    val textColor = White
-    val secondaryTextColor = SoftGray
-    val topColor = Color(0xFF00667B)
-    val bottomColor = DarkBlack
-
     LazyColumn(
         modifier = Modifier
             .fillMaxSize()
             .background(
                 brush = Brush.verticalGradient(
-                    colors = listOf(topColor, bottomColor),
+                    colors = listOf(Turquoise, DarkBlack),
                     startY = 0f,
                     endY = 1000f
                 )
@@ -215,7 +216,7 @@ fun ProfileScreen(
                             .clickable { showImagePickerDialog = true }
                     )
 
-                    // Edit icon overlay
+                    // Edit Icon Overlay
                     Box(
                         modifier = Modifier
                             .size(36.dp)
@@ -233,7 +234,7 @@ fun ProfileScreen(
                         )
                     }
 
-                    // Loading indicator for profile update
+                    // Loading Indicator
                     if (editState.isUpdatingProfile) {
                         Box(
                             modifier = Modifier
@@ -256,7 +257,7 @@ fun ProfileScreen(
                 Text(
                     text = userProfile.username,
                     style = MaterialTheme.typography.headlineMedium,
-                    color = textColor
+                    color = White
                 )
 
                 // Location with edit functionality
@@ -274,7 +275,7 @@ fun ProfileScreen(
                     Text(
                         text = editProfileViewModel.getCountryNameFromCode(userProfile.location),
                         style = MaterialTheme.typography.bodyLarge,
-                        color = secondaryTextColor
+                        color = SoftGray
                     )
 
                     Spacer(modifier = Modifier.width(4.dp))
@@ -282,7 +283,7 @@ fun ProfileScreen(
                     Icon(
                         imageVector = Icons.Default.Edit,
                         contentDescription = "Edit location",
-                        tint = secondaryTextColor,
+                        tint = SoftGray,
                         modifier = Modifier.size(16.dp)
                     )
 
@@ -387,7 +388,6 @@ fun ProfileScreen(
                     TextButton(
                         onClick = {
                             showImagePickerDialog = false
-                            // Check camera permission
                             val cameraPermission = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
                                 Manifest.permission.CAMERA
                             } else {
@@ -397,7 +397,13 @@ fun ProfileScreen(
                             if (ContextCompat.checkSelfPermission(context, cameraPermission) == PackageManager.PERMISSION_GRANTED) {
                                 val cameraIntent = editProfileViewModel.createImageCaptureIntent(context)
                                 cameraIntent?.let { intent ->
-                                    val photoUri = intent.getParcelableExtra<Uri>(android.provider.MediaStore.EXTRA_OUTPUT)
+                                    val photoUri = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                                        intent.getParcelableExtra(MediaStore.EXTRA_OUTPUT, Uri::class.java)
+                                    } else {
+                                        @Suppress("DEPRECATION")
+                                        intent.getParcelableExtra(MediaStore.EXTRA_OUTPUT)
+                                    }
+
                                     photoUri?.let {
                                         editProfileViewModel.setSelectedImageUri(it)
                                         cameraLauncher.launch(it)
@@ -550,7 +556,7 @@ fun LocationSelectionDialog(
                         readOnly = true,
                         enabled = !editState.isLocationLoading,
                         trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded) },
-                        modifier = Modifier.menuAnchor().fillMaxWidth()
+                        modifier = Modifier.menuAnchor(MenuAnchorType.PrimaryNotEditable, enabled = true).fillMaxWidth()
                     )
 
                     ExposedDropdownMenu(
