@@ -47,6 +47,8 @@ import kotlinx.coroutines.launch
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import android.app.Application
+import com.example.purrytify.model.Song
+import com.example.purrytify.services.RetrofitClient
 
 // Needed by MusicService to pass the MainActivity to PlayerViewModel (but actually could be in different directory, for modularity,  similiar as HomeViewModelFactory.kt)
 class PlayerViewModelFactory(
@@ -295,6 +297,58 @@ class MainActivity : AppCompatActivity() {
                 Log.e("MainActivity", "Error unbinding MusicService: ${e.message}", e)
             }
         }
+    }
+
+    // Logic to handle deeplink
+    override fun onNewIntent(intent: Intent?) {
+        super.onNewIntent(intent)
+        Log.d("MainActivity", "Deeplink: onNewIntent called with intent: $intent")
+        intent?.data?.let { uri ->
+            Log.d("MainActivity", "Deeplink: Intent data URI: $uri")
+            if (uri.scheme == "purrytify" && uri.host == "song") {
+                val songId = uri.lastPathSegment
+                Log.d("MainActivity", "Deeplink: Extracted songId: $songId")
+                if (!songId.isNullOrEmpty()) {
+                    lifecycleScope.launch {
+                        try {
+                            Log.d("MainActivity", "Deeplink: Fetching song with ID: $songId")
+                            val songResponse = RetrofitClient.instance.getTopGlobalSongs()
+                                .find { it.id.toString() == songId }
+                            if (songResponse != null) {
+                                Log.d("MainActivity", "Deeplink: Song found: ${songResponse.title}")
+                                val songModel = Song(
+                                    id = songResponse.id.toString(),
+                                    title = songResponse.title,
+                                    artist = songResponse.artist,
+                                    albumArt = songResponse.artwork,
+                                    audioUrl = songResponse.url,
+                                    isLiked = false, // Default value, update if needed
+                                    isListened = false, // Default value, update if needed
+                                    uploadedAt = null, // Update if needed
+                                    updatedAt = null, // Update if needed
+                                    lastPlayedAt = null, // Update if needed
+                                    rank = songResponse.rank,
+                                    country = songResponse.country,
+                                    isPlaying = false,
+                                    isFromServer = true
+                                )
+                                playerViewModel.playSong(songModel)
+                                Log.d("MainActivity", "Deeplink: Navigating to song playback screen")
+                                navController.navigate(R.id.navigation_song_playback)
+                            } else {
+                                Log.e("MainActivity", "Deeplink: Song with ID $songId not found")
+                            }
+                        } catch (e: Exception) {
+                            Log.e("MainActivity", "Deeplink: Error fetching song: ${e.message}", e)
+                        }
+                    }
+                } else {
+                    Log.e("MainActivity", "Deeplink: songId is null or empty")
+                }
+            } else {
+                Log.d("MainActivity", "Deeplink: URI scheme or host does not match expected values")
+            }
+        } ?: Log.d("MainActivity", "Deeplink: Intent data is null")
     }
 }
 
