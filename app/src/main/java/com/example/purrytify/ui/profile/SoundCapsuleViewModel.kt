@@ -3,26 +3,33 @@ package com.example.purrytify.ui.profile
 import android.app.Application
 import android.content.Context
 import android.content.Intent
+import android.graphics.*
 import android.os.Environment
 import android.util.Log
 import android.widget.Toast
+import androidx.compose.ui.graphics.toArgb
 import androidx.core.content.FileProvider
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.purrytify.data.AppDatabase
 import com.example.purrytify.repository.AnalyticsRepository
+import com.example.purrytify.repository.DailyListenData
 import com.example.purrytify.repository.MonthYear
 import com.example.purrytify.repository.MonthlyAnalytics
+import com.example.purrytify.ui.theme.DarkBlack
+import com.example.purrytify.ui.theme.DarkBlue
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import java.io.File
+import java.io.FileOutputStream
 import java.io.FileWriter
 import java.text.SimpleDateFormat
-import java.util.Calendar
-import java.util.Locale
+import java.util.*
 
 data class SoundCapsuleState(
     val isLoading: Boolean = false,
@@ -235,6 +242,25 @@ class SoundCapsuleViewModel(application: Application) : AndroidViewModel(applica
         return monthlyAnalyticsCache[monthYear]
     }
 
+    fun loadDailyDataForMonth(monthYear: MonthYear, onDataLoaded: (List<DailyListenData>) -> Unit) {
+        val userId = currentUserId ?: return
+
+        viewModelScope.launch {
+            try {
+                val dailyData = analyticsRepository.getDailyListenTimeForMonth(
+                    userId = userId,
+                    year = monthYear.year,
+                    month = monthYear.month
+                )
+                onDataLoaded(dailyData)
+                Log.d("SoundCapsuleViewModel", "Loaded daily data for ${monthYear.getDisplayName()}: ${dailyData.size} days")
+            } catch (e: Exception) {
+                Log.e("SoundCapsuleViewModel", "Error loading daily data: ${e.message}")
+                onDataLoaded(emptyList())
+            }
+        }
+    }
+
     fun exportCompleteAnalytics(context: Context) {
         val userId = currentUserId ?: return
 
@@ -392,8 +418,205 @@ class SoundCapsuleViewModel(application: Application) : AndroidViewModel(applica
         context.startActivity(Intent.createChooser(shareIntent, "Share Sound Capsule"))
     }
 
-    fun clearError() {
-        _state.update { it.copy(error = null) }
+    fun shareMonthAsImage(context: Context, monthYear: MonthYear) {
+        val userId = currentUserId ?: return
+
+        viewModelScope.launch {
+            _state.update { it.copy(isExporting = true) }
+
+            try {
+                val analytics = analyticsRepository.getMonthlyAnalytics(userId, monthYear.year, monthYear.month)
+                val imageFile = generateSoundCapsuleImage(context, monthYear, analytics)
+                shareImageFile(context, imageFile)
+            } catch (e: Exception) {
+                Log.e("SoundCapsuleViewModel", "Error sharing image: ${e.message}")
+                Toast.makeText(context, "Failed to create share image", Toast.LENGTH_SHORT).show()
+            } finally {
+                _state.update { it.copy(isExporting = false) }
+            }
+        }
+    }
+
+    private suspend fun generateSoundCapsuleImage(
+        context: Context,
+        monthYear: MonthYear,
+        analytics: MonthlyAnalytics
+    ): File = withContext(Dispatchers.IO) {
+        val width = 1080
+        val height = 1920
+
+        val bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
+        val canvas = Canvas(bitmap)
+
+        // Background gradient
+        val backgroundPaint = Paint().apply {
+            shader = LinearGradient(
+                0f, 0f, 0f, height.toFloat(),
+                intArrayOf(
+                    DarkBlack.toArgb(),
+                    DarkBlue.toArgb(),
+                    DarkBlack.toArgb()
+                ),
+                null,
+                Shader.TileMode.CLAMP
+            )
+        }
+        canvas.drawRect(0f, 0f, width.toFloat(), height.toFloat(), backgroundPaint)
+
+        // App branding
+        val brandPaint = Paint().apply {
+            color = Color.WHITE
+            textSize = 48f
+            typeface = Typeface.DEFAULT_BOLD
+            isAntiAlias = true
+        }
+        canvas.drawText("🎵 Purrytify", 80f, 120f, brandPaint)
+
+        // Month and year
+        val monthPaint = Paint().apply {
+            color = Color.WHITE
+            textSize = 72f
+            typeface = Typeface.DEFAULT_BOLD
+            isAntiAlias = true
+        }
+        canvas.drawText("My ${monthYear.getDisplayName()}", 80f, 220f, monthPaint)
+
+        val subtitlePaint = Paint().apply {
+            color = Color.parseColor("#1DB954") // SpotifyGreen
+            textSize = 56f
+            typeface = Typeface.DEFAULT_BOLD
+            isAntiAlias = true
+        }
+        canvas.drawText("Sound Capsule", 80f, 300f, subtitlePaint)
+
+        // Main listening time - large and prominent
+        val mainTimePaint = Paint().apply {
+            color = Color.parseColor("#1DB954")
+            textSize = 120f
+            typeface = Typeface.DEFAULT_BOLD
+            isAntiAlias = true
+        }
+        val timeText = formatMinutesToReadable(analytics.totalListenTimeMinutes)
+        canvas.drawText(timeText, 80f, 480f, mainTimePaint)
+
+        val timeLabelPaint = Paint().apply {
+            color = Color.WHITE
+            textSize = 48f
+            isAntiAlias = true
+        }
+        canvas.drawText("Time listened", 80f, 540f, timeLabelPaint)
+
+        // Stats section
+        var yPosition = 680f
+
+        // Top Artists section
+        if (analytics.topArtists.isNotEmpty()) {
+            val sectionPaint = Paint().apply {
+                color = Color.WHITE
+                textSize = 56f
+                typeface = Typeface.DEFAULT_BOLD
+                isAntiAlias = true
+            }
+            canvas.drawText("Top artists", 80f, yPosition, sectionPaint)
+            yPosition += 80f
+
+            val artistPaint = Paint().apply {
+                color = Color.parseColor("#B3B3B3")
+                textSize = 42f
+                isAntiAlias = true
+            }
+
+            analytics.topArtists.take(5).forEachIndexed { index, artist ->
+                val rankText = "${index + 1} ${artist.artist}"
+                canvas.drawText(rankText, 120f, yPosition, artistPaint)
+                yPosition += 60f
+            }
+            yPosition += 40f
+        }
+
+        // Top Songs section
+        if (analytics.topSongs.isNotEmpty()) {
+            val sectionPaint = Paint().apply {
+                color = Color.WHITE
+                textSize = 56f
+                typeface = Typeface.DEFAULT_BOLD
+                isAntiAlias = true
+            }
+            canvas.drawText("Top songs", 80f, yPosition, sectionPaint)
+            yPosition += 80f
+
+            val songPaint = Paint().apply {
+                color = Color.parseColor("#B3B3B3")
+                textSize = 42f
+                isAntiAlias = true
+            }
+
+            analytics.topSongs.take(5).forEachIndexed { index, song ->
+                val songText = "${index + 1} ${song.title}"
+                canvas.drawText(songText, 120f, yPosition, songPaint)
+
+                val artistText = "   ${song.artist}"
+                canvas.drawText(artistText, 120f, yPosition + 45f, Paint().apply {
+                    color = Color.parseColor("#808080")
+                    textSize = 36f
+                    isAntiAlias = true
+                })
+                yPosition += 100f
+            }
+            yPosition += 40f
+        }
+
+        // Additional stats
+        val statsPaint = Paint().apply {
+            color = Color.WHITE
+            textSize = 42f
+            isAntiAlias = true
+        }
+
+        canvas.drawText("${analytics.uniqueArtistsCount} artists discovered", 80f, yPosition, statsPaint)
+        yPosition += 60f
+        canvas.drawText("${analytics.uniqueSongsCount} songs played", 80f, yPosition, statsPaint)
+        yPosition += 60f
+
+        val avgText = "Daily average: ${String.format("%.0f", analytics.dailyAverageMinutes)} min"
+        canvas.drawText(avgText, 80f, yPosition, statsPaint)
+
+        // Footer
+        val datePaint = Paint().apply {
+            color = Color.parseColor("#808080")
+            textSize = 32f
+            isAntiAlias = true
+        }
+        val dateText = SimpleDateFormat("MMMM dd, yyyy", Locale.getDefault()).format(Date())
+        canvas.drawText(dateText, width - 400f, height - 80f, datePaint)
+
+        // Save to file
+        val fileName = "purrytify_${monthYear.year}_${monthYear.month}_sound_capsule.png"
+        val file = File(context.getExternalFilesDir(Environment.DIRECTORY_PICTURES), fileName)
+
+        FileOutputStream(file).use { out ->
+            bitmap.compress(Bitmap.CompressFormat.PNG, 100, out)
+        }
+
+        bitmap.recycle()
+        return@withContext file
+    }
+
+    private fun shareImageFile(context: Context, imageFile: File) {
+        val uri = FileProvider.getUriForFile(
+            context,
+            "${context.packageName}.fileprovider",
+            imageFile
+        )
+
+        val shareIntent = Intent(Intent.ACTION_SEND).apply {
+            type = "image/png"
+            putExtra(Intent.EXTRA_STREAM, uri)
+            putExtra(Intent.EXTRA_TEXT, "Check out my music listening stats from Purrytify! 🎵")
+            addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+        }
+
+        context.startActivity(Intent.createChooser(shareIntent, "Share Your Sound Capsule"))
     }
 
     fun formatDuration(milliseconds: Long): String {
