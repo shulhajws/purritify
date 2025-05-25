@@ -7,6 +7,7 @@ import android.app.PendingIntent
 import android.app.Service
 import android.content.Context
 import android.content.Intent
+import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.os.Binder
 import android.os.IBinder
@@ -17,7 +18,12 @@ import com.example.purrytify.MainActivity
 import com.example.purrytify.R
 import com.example.purrytify.model.Song
 import com.example.purrytify.ui.playback.PlayerViewModel
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.withContext
+import java.net.URL
 
+// TODO: Duration display in notification not handled yet
 class MusicService : Service() {
 
     private val binder = MusicBinder()
@@ -128,15 +134,30 @@ class MusicService : Service() {
                 PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
             )
 
-            // Convert to Bitmap
-            val albumArtBitmap = BitmapFactory.decodeFile(song.albumArt)
+            val largeIcon = runBlocking {
+                try {
+                    if (!song.isFromServer) {
+                        // Load album art from local URI
+                        val uri = android.net.Uri.parse(song.albumArt)
+                        contentResolver.openInputStream(uri)?.use { inputStream ->
+                            BitmapFactory.decodeStream(inputStream)
+                        } ?: throw Exception("Failed to decode album art from local URI")
+                    } else {
+                        // Load album art from server
+                        loadOnlineAlbumArt(song)
+                    }
+                } catch (e: Exception) {
+                    Log.w("MusicService", "Album art loading failed, using placeholder image instead. Value of song.albumArt: ${song.albumArt}")
+                    Log.w("MusicService", "Album art loading failed message: ${e.message}")
+                    BitmapFactory.decodeResource(resources, R.drawable.placeholder_album_art)
+                }
+            }
 
-            // The returns:
             return NotificationCompat.Builder(this, CHANNEL_ID)
                 .setContentTitle(song.title)
                 .setContentText(song.artist)
+                .setLargeIcon(largeIcon)
                 .setSmallIcon(R.drawable.ic_launcher_foreground)
-                .setLargeIcon(albumArtBitmap)
                 .setContentIntent(contentIntent)
                 .addAction(prevAction)
                 .addAction(playPauseAction)
@@ -214,4 +235,15 @@ class MusicService : Service() {
         return START_NOT_STICKY
     }
 
+    suspend fun loadOnlineAlbumArt(song: Song): Bitmap {
+        return try {
+            withContext(Dispatchers.IO) {
+                val url = URL(song.albumArt)
+                BitmapFactory.decodeStream(url.openConnection().getInputStream())
+            }
+        } catch (e: Exception) {
+            Log.e("MusicService", "Error loading online album art: ${song.albumArt}\n with message: ${e.message}", e)
+            BitmapFactory.decodeResource(resources, R.drawable.placeholder_album_art)
+        }
+    }
 }
