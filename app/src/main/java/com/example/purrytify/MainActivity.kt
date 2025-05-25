@@ -287,7 +287,8 @@ class MainActivity : AppCompatActivity() {
         super.onDestroy()
         if (isServiceBound) {
             try {
-                Log.d("MainActivity", "Unbinding MusicService")
+                Log.d("MainActivity", "Unbinding MusicService and Remove Notification")
+                musicService?.stopServiceAndRemoveNotification()
                 unbindService(serviceConnection)
                 isServiceBound = false
             } catch (e: Exception) {

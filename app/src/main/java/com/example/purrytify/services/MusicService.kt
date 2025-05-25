@@ -74,6 +74,11 @@ class MusicService : Service() {
         }
     }
 
+    fun stopServiceAndRemoveNotification() {
+        stopForeground(true) // Stop foreground service and remove notification
+        stopSelf() // Stop service
+    }
+
     fun updateNotification(isPlaying: Boolean) {
         currentSong?.let {
             Log.d("MusicService", "Updating notification for song: ${it.title}, isPlaying: $isPlaying")

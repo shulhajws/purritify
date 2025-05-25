@@ -1,6 +1,8 @@
 package com.example.purrytify.ui.profile
 
 import android.app.Activity
+import android.app.NotificationManager
+import android.content.Context
 import android.content.Intent
 import android.os.Bundle
 import android.util.Log
@@ -131,9 +133,15 @@ class ProfileFragment : Fragment() {
                             Spacer(modifier = Modifier.height(32.dp))
 
                             // Logout Button
+                            // TODO: handle to dismiss the notification
                             val context = LocalContext.current
                             Button(
                                 onClick = {
+                                    // Dismiss notification
+                                    val notificationManager = requireContext().getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+                                    notificationManager.cancelAll()
+
+                                    // Clear token and logout
                                     TokenManager.clearToken(context)
                                     sharedViewModel.clearGlobalUserProfile()
                                     val intent = Intent(context, LoginActivity::class.java)
