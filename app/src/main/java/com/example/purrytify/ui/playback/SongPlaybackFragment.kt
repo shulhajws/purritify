@@ -33,6 +33,7 @@ import com.example.purrytify.ui.download.DownloadViewModel
 import com.example.purrytify.ui.shared.SharedViewModel
 import com.example.purrytify.util.AudioDevice
 import com.example.purrytify.util.AudioRouteManager
+import com.example.purrytify.util.QRCodeUtils
 import com.squareup.picasso.Picasso
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
@@ -66,6 +67,7 @@ class SongPlaybackFragment : Fragment() {
     private lateinit var btnShuffle: ImageButton
     private lateinit var btnRepeat: ImageButton
     private lateinit var btnShare: ImageButton
+    private lateinit var btnQRCode: ImageButton
 
     override fun onCreateView(
         inflater: LayoutInflater,
@@ -230,6 +232,7 @@ class SongPlaybackFragment : Fragment() {
         btnEditSong = view.findViewById(R.id.btn_edit_delete_song)
         btnDownload = view.findViewById(R.id.btn_download)
         btnShare = view.findViewById(R.id.btn_share)
+        btnQRCode = view.findViewById(R.id.btn_qr_code)
         btnFavorite = view.findViewById(R.id.btn_favorite)
         textCurrentTime = view.findViewById(R.id.text_current_time)
         textTotalTime = view.findViewById(R.id.text_total_time)
@@ -319,6 +322,22 @@ class SongPlaybackFragment : Fragment() {
             } else {
                 Log.d("SongPlayback", "Share action failed: currentSong is null or not from server")
                 Toast.makeText(requireContext(), "Only songs from the server can be shared.", Toast.LENGTH_SHORT).show()
+            }
+        }
+
+        btnQRCode.setOnClickListener {
+            val currentSong = viewModel.currentSong.value
+            if (currentSong != null && currentSong.isFromServer) {
+                // Can be https or http. In this case, https used
+                val deepLink = "https://purrytify://song/${currentSong.id}"
+                val qrBitmap = QRCodeUtils.generateQRCode(deepLink)
+                if (qrBitmap != null) {
+                    QRCodeUtils.showQrPreviewDialog(requireContext(), qrBitmap, currentSong.title, currentSong.artist)
+                } else {
+                    Toast.makeText(requireContext(), "Failed to generate QR code", Toast.LENGTH_SHORT).show()
+                }
+            } else {
+                Toast.makeText(requireContext(), "Only songs from the server can be shared via QR", Toast.LENGTH_SHORT).show()
             }
         }
     }

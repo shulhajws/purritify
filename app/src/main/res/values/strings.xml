@@ -29,4 +29,6 @@
     <string name="next_up">Next Up</string>
     <string name="added_to_queue">Added to queue</string>
     <string name="share_icon">Share Icon</string>
+    <string name="qr_code_icon">QR Code Icon</string>
+    <string name="scan_qr">Scan QR</string>
 </resources>

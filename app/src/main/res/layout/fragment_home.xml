@@ -21,6 +21,20 @@
         app:layout_constraintTop_toTopOf="parent"
         app:layout_constraintStart_toStartOf="parent"/>
 
+    <ImageButton
+        android:id="@+id/btn_scan_qr"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentTop="true"
+        android:layout_alignParentEnd="true"
+        android:layout_marginTop="16dp"
+        android:layout_marginEnd="16dp"
+        android:background="?attr/selectableItemBackgroundBorderless"
+        android:src="@drawable/scan_qr_code_24"
+        android:contentDescription="@string/scan_qr"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"/>
+
     <androidx.compose.ui.platform.ComposeView
     android:id="@+id/home_compose_view"
     android:layout_width="0dp"

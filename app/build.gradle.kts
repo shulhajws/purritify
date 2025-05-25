@@ -122,5 +122,9 @@ dependencies {
     implementation("androidx.media:media:1.6.0")
     implementation("androidx.core:core-ktx:1.12.0")
 
+    // QR Code Generator dependencies
+    implementation("com.google.zxing:core:3.5.2")
+    implementation("com.journeyapps:zxing-android-embedded:4.3.0")
+
     debugImplementation("androidx.compose.ui:ui-tooling:$compose_version")
 }
