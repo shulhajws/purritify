@@ -20,6 +20,7 @@ import androidx.navigation.fragment.NavHostFragment
 import com.example.purrytify.R
 import com.example.purrytify.databinding.FragmentHomeBinding
 import com.example.purrytify.model.Song
+import com.example.purrytify.repository.RecommendationPlaylist
 import com.example.purrytify.ui.download.DownloadViewModel
 import com.example.purrytify.ui.playback.PlayerViewModel
 import com.example.purrytify.ui.shared.SharedViewModel
@@ -31,6 +32,7 @@ class HomeFragment : Fragment() {
     private val binding get() = _binding!!
     private lateinit var homeViewModel: HomeViewModel
     private lateinit var downloadViewModel: DownloadViewModel
+    private lateinit var recommendationViewModel: RecommendationViewModel
     private lateinit var navController: NavController
     private val playerViewModel: PlayerViewModel by activityViewModels()
     private val sharedViewModel: SharedViewModel by activityViewModels()
@@ -43,12 +45,17 @@ class HomeFragment : Fragment() {
         val sharedViewModel = ViewModelProvider(requireActivity())[SharedViewModel::class.java]
 
         val homeViewModelFactory = HomeViewModelFactory(requireActivity().application, sharedViewModel)
-        val homeViewModel = ViewModelProvider(this, homeViewModelFactory)[HomeViewModel::class.java]
+        homeViewModel = ViewModelProvider(this, homeViewModelFactory)[HomeViewModel::class.java]
 
         downloadViewModel = ViewModelProvider(
             this,
             ViewModelProvider.AndroidViewModelFactory.getInstance(requireActivity().application)
         )[DownloadViewModel::class.java]
+
+        recommendationViewModel = ViewModelProvider(
+            this,
+            ViewModelProvider.AndroidViewModelFactory.getInstance(requireActivity().application)
+        )[RecommendationViewModel::class.java]
 
         _binding = FragmentHomeBinding.inflate(inflater, container, false)
         binding.fragmentHeaderTitle.text = getString(R.string.title_home)
@@ -61,6 +68,7 @@ class HomeFragment : Fragment() {
                             val userId = profile.id.toInt()
                             homeViewModel.updateForUser(userId)
                             downloadViewModel.updateForUser(userId)
+                            recommendationViewModel.updateForUser(userId, profile.location)
                         } catch (e: NumberFormatException) {
                             Log.e("HomeFragment", "Invalid user ID format: ${profile.id}")
                         }
@@ -89,10 +97,14 @@ class HomeFragment : Fragment() {
                     HomeScreen(
                         viewModel = homeViewModel,
                         downloadViewModel = downloadViewModel,
+                        recommendationViewModel = recommendationViewModel,
                         onSongClick = { song ->
-                            playerViewModel.playSong(song)
+                            playerViewModel.playSongBySongModel(song)
                             navigateToPlayback(song)
                         },
+                        onPlaylistClick = { playlist ->
+                            navigateToPlaylistDetail(playlist)
+                        }
                     )
                 }
             }
@@ -105,6 +117,13 @@ class HomeFragment : Fragment() {
             putParcelable("song", song)
         }
         navController.navigate(R.id.navigation_song_playback, bundle)
+    }
+
+    private fun navigateToPlaylistDetail(playlist: RecommendationPlaylist) {
+        val bundle = Bundle().apply {
+            putParcelable("playlist", playlist)
+        }
+        navController.navigate(R.id.navigation_playlist_detail, bundle)
     }
 
     override fun onDestroyView() {
