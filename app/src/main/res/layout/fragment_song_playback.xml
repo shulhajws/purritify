@@ -65,6 +65,17 @@
             android:contentDescription="@string/share_icon"
             android:src="@drawable/ic_share" />
 
+        <ImageButton
+            android:id="@+id/btn_qr_code"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_toStartOf="@id/btn_share"
+            android:layout_alignParentTop="true"
+            android:layout_marginEnd="16dp"
+            android:background="@android:color/transparent"
+            android:contentDescription="@string/qr_code_icon"
+            android:src="@drawable/ic_qr_code_2_24" />
+
         <ImageView
             android:id="@+id/image_album"
             android:layout_width="match_parent"

@@ -66,6 +66,7 @@ class SongPlaybackFragment : Fragment() {
     private lateinit var btnShuffle: ImageButton
     private lateinit var btnRepeat: ImageButton
     private lateinit var btnShare: ImageButton
+    private lateinit var btnQRCode: ImageButton
 
     override fun onCreateView(
         inflater: LayoutInflater,
@@ -230,6 +231,7 @@ class SongPlaybackFragment : Fragment() {
         btnEditSong = view.findViewById(R.id.btn_edit_delete_song)
         btnDownload = view.findViewById(R.id.btn_download)
         btnShare = view.findViewById(R.id.btn_share)
+        btnQRCode = view.findViewById(R.id.btn_qr_code)
         btnFavorite = view.findViewById(R.id.btn_favorite)
         textCurrentTime = view.findViewById(R.id.text_current_time)
         textTotalTime = view.findViewById(R.id.text_total_time)
@@ -320,6 +322,10 @@ class SongPlaybackFragment : Fragment() {
                 Log.d("SongPlayback", "Share action failed: currentSong is null or not from server")
                 Toast.makeText(requireContext(), "Only songs from the server can be shared.", Toast.LENGTH_SHORT).show()
             }
+        }
+
+        btnQRCode.setOnClickListener {
+
         }
     }
 
