@@ -5,7 +5,7 @@ import android.util.Log
 import android.widget.Toast
 import androidx.work.Worker
 import androidx.work.WorkerParameters
-import com.example.purrytify.network.RetrofitClient
+import com.example.purrytify.services.RetrofitClient
 import com.example.purrytify.util.TokenManager
 import retrofit2.HttpException
 import java.text.SimpleDateFormat

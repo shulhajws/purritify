@@ -1,10 +1,14 @@
 package com.example.purrytify
 
 import android.Manifest
+import android.content.ComponentName
+import android.content.Context
 import android.content.Intent
+import android.content.ServiceConnection
 import android.content.pm.PackageManager
 import android.os.Build
 import android.os.Bundle
+import android.os.IBinder
 import android.util.Log
 import android.view.View
 import android.view.ViewGroup
@@ -29,6 +33,7 @@ import androidx.navigation.fragment.NavHostFragment
 import androidx.navigation.ui.AppBarConfiguration
 import androidx.navigation.ui.setupWithNavController
 import com.example.purrytify.databinding.ActivityMainBinding
+import com.example.purrytify.services.MusicService
 import com.example.purrytify.ui.login.LoginActivity
 import com.example.purrytify.ui.playback.MiniPlayer
 import com.example.purrytify.ui.playback.PlayerViewModel
@@ -39,13 +44,39 @@ import com.example.purrytify.util.scheduleTokenVerification
 import com.google.android.material.bottomnavigation.BottomNavigationView
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.ViewModelProvider
+import android.app.Application
+
+// Needed by MusicService to pass the MainActivity to PlayerViewModel (but actually could be in different directory, for modularity,  similiar as HomeViewModelFactory.kt)
+class PlayerViewModelFactory(
+    private val application: Application,
+    private val mainActivity: MainActivity
+) : ViewModelProvider.Factory {
+    override fun <T : ViewModel> create(modelClass: Class<T>): T {
+        if (modelClass.isAssignableFrom(PlayerViewModel::class.java)) {
+            @Suppress("UNCHECKED_CAST")
+            return PlayerViewModel(application, mainActivity) as T
+        }
+        throw IllegalArgumentException("Unknown ViewModel class")
+    }
+}
 
 class MainActivity : AppCompatActivity() {
     private lateinit var binding: ActivityMainBinding
     private lateinit var navController: NavController
     private lateinit var appBarConfiguration: AppBarConfiguration
-    private val playerViewModel: PlayerViewModel by viewModels()
+    private val playerViewModel: PlayerViewModel by lazy {
+        ViewModelProvider(
+            this,
+            PlayerViewModelFactory(application, this)
+        )[PlayerViewModel::class.java]
+    }
     private val sharedViewModel: SharedViewModel by viewModels()
+
+    // Notification Control need
+    var musicService: MusicService? = null
+    var isServiceBound = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -139,6 +170,9 @@ class MainActivity : AppCompatActivity() {
         // Call scheduleTokenVerification() for periodic checks
         scheduleTokenVerification(this)
 
+        // Bind MusicService
+        bindMusicService()
+
         lifecycleScope.launch {
             repeatOnLifecycle(Lifecycle.State.STARTED) {
                 sharedViewModel.globalUserProfile.collect { userProfile ->
@@ -215,6 +249,53 @@ class MainActivity : AppCompatActivity() {
             }
         }
     }
+
+    // Notification Control need
+    private val serviceConnection = object : ServiceConnection {
+        override fun onServiceConnected(name: ComponentName?, service: IBinder?) {
+            Log.d("MainActivity", "Service connected: $name")
+            try {
+                val binder = service as MusicService.MusicBinder
+                musicService = binder.getService()
+                isServiceBound = true
+                musicService?.setPlayerViewModel(playerViewModel)
+                Log.d("MainActivity", "Set PlayerViewModel in MusicService ($musicService) as: $playerViewModel")
+            } catch (e: Exception) {
+                Log.e("MainActivity", "Error during service connection: ${e.message}", e)
+            }
+        }
+
+        override fun onServiceDisconnected(name: ComponentName?) {
+            Log.d("MainActivity", "Service disconnected: $name")
+            musicService = null
+            isServiceBound = false
+        }
+    }
+
+    // Notification Control need
+    private fun bindMusicService() {
+        val intent = Intent(this, MusicService::class.java)
+        try {
+            Log.d("MainActivity", "Binding MusicService")
+            bindService(intent, serviceConnection, Context.BIND_AUTO_CREATE)
+        } catch (e: Exception) {
+            Log.e("MainActivity", "Error binding MusicService: ${e.message}", e)
+        }
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+        if (isServiceBound) {
+            try {
+                Log.d("MainActivity", "Unbinding MusicService and Remove Notification")
+                musicService?.stopServiceAndRemoveNotification()
+                unbindService(serviceConnection)
+                isServiceBound = false
+            } catch (e: Exception) {
+                Log.e("MainActivity", "Error unbinding MusicService: ${e.message}", e)
+            }
+        }
+    }
 }
 
 @Composable
@@ -232,7 +313,8 @@ fun MiniPlayerComposable(playerViewModel: PlayerViewModel, navController: NavCon
                         if (navController.currentDestination?.id != R.id.navigation_song_playback) {
                             navController.navigate(
                                 R.id.navigation_song_playback,
-                                bundleOf("songId" to song.id)
+                                // Pass variable to page that navigated to
+                                bundleOf("songId" to song.id, "song" to song)
                             )
                         }
                     },

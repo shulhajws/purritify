@@ -3,9 +3,9 @@ package com.example.purrytify.ui.login
 import android.content.Context
 import android.util.Log
 import androidx.lifecycle.ViewModel
-import com.example.purrytify.network.LoginRequest
-import com.example.purrytify.network.LoginResponse
-import com.example.purrytify.network.RetrofitClient
+import com.example.purrytify.services.LoginRequest
+import com.example.purrytify.services.LoginResponse
+import com.example.purrytify.services.RetrofitClient
 import com.example.purrytify.util.NetworkUtil
 import com.example.purrytify.util.TokenManager
 import kotlinx.coroutines.flow.MutableStateFlow

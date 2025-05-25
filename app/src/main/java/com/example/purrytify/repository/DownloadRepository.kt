@@ -4,7 +4,7 @@ import android.util.Log
 import com.example.purrytify.data.dao.SongDao
 import com.example.purrytify.data.entity.SongEntity
 import com.example.purrytify.model.Song
-import com.example.purrytify.network.SongResponse
+import com.example.purrytify.services.SongResponse
 import java.util.Date
 
 class DownloadRepository(

@@ -6,7 +6,7 @@ import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.purrytify.data.AppDatabase
 import com.example.purrytify.model.Song
-import com.example.purrytify.network.SongResponse
+import com.example.purrytify.services.SongResponse
 import com.example.purrytify.repository.DownloadRepository
 import com.example.purrytify.repository.SongRepository
 import com.example.purrytify.util.DownloadManager

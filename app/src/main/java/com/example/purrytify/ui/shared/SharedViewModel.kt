@@ -6,7 +6,7 @@ import android.widget.Toast
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.purrytify.model.UserProfile
-import com.example.purrytify.network.RetrofitClient
+import com.example.purrytify.services.RetrofitClient
 import com.example.purrytify.util.TokenManager
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
