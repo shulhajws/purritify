@@ -1,20 +1,24 @@
 package com.example.purrytify.ui.playback
 
 import android.app.Application
+import android.content.Intent
 import android.media.MediaPlayer
 import android.net.Uri
 import android.os.Handler
 import android.os.Looper
 import android.util.Log
 import android.widget.Toast
+import androidx.core.content.ContextCompat
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.asFlow
 import androidx.lifecycle.viewModelScope
+import com.example.purrytify.MainActivity
 import com.example.purrytify.data.AppDatabase
 import com.example.purrytify.data.mapper.SongMapper
 import com.example.purrytify.model.Song
 import com.example.purrytify.repository.AnalyticsRepository
 import com.example.purrytify.repository.SongRepository
+import com.example.purrytify.services.MusicService
 import com.example.purrytify.util.AudioRouteManager
 import com.example.purrytify.util.EventBus
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -28,7 +32,7 @@ enum class RepeatMode {
     REPEAT_ONE
 }
 
-class PlayerViewModel(application: Application) : AndroidViewModel(application) {
+class PlayerViewModel(application: Application, private val mainActivity: MainActivity) : AndroidViewModel(application) {
     private val repository: SongRepository
     private var allSongs: List<Song> = emptyList()
     private var currentIndex = 0
@@ -314,6 +318,11 @@ class PlayerViewModel(application: Application) : AndroidViewModel(application) 
                         startAnalyticsSession(song)
                         // Start real-time analytics updates
                         startRealTimeAnalyticsUpdates()
+
+                        // Start music service if currentSong not null
+                        currentSong.value?.let { song ->
+                            startMusicService(song, isPlaying)
+                        }
                     }
                     setOnErrorListener { _, what, extra ->
                         Log.e("PlayerViewModel", "MediaPlayer error: what=$what, extra=$extra")
@@ -426,12 +435,16 @@ class PlayerViewModel(application: Application) : AndroidViewModel(application) 
     }
 
     fun togglePlayPause() {
+        Log.d("MusicService", "Enter to togglePlayPause() with mediaPlayer: $mediaPlayer")
         mediaPlayer?.let {
             if (it.isPlaying) {
                 it.pause()
                 _isPlaying.value = false
                 handler.removeCallbacks(updateProgressRunnable)
                 stopRealTimeAnalyticsUpdates()
+
+                // Update music service
+                updateMusicService(_isPlaying.value)
 
                 lastPauseTime = System.currentTimeMillis()
                 wasPlayingBeforePause = true
@@ -441,6 +454,9 @@ class PlayerViewModel(application: Application) : AndroidViewModel(application) 
                 _isPlaying.value = true
                 handler.post(updateProgressRunnable)
                 startRealTimeAnalyticsUpdates()
+
+                // Update music service
+                updateMusicService(_isPlaying.value)
 
                 if (wasPlayingBeforePause && lastPauseTime > 0) {
                     totalPausedDuration += System.currentTimeMillis() - lastPauseTime
@@ -822,10 +838,44 @@ class PlayerViewModel(application: Application) : AndroidViewModel(application) 
         }
     }
 
-
-
     fun getAudioRouteManager(): AudioRouteManager? {
         return audioRouteManager
+    }
+
+    // Non-private, maybe will be used in another files
+    fun startMusicService(song: Song, isPlaying: Boolean) {
+        val context = mainActivity
+        try {
+            Log.d("PlayerViewModel", "Attempting to start music service with title: ${song.title}, and isPlaying: $isPlaying")
+
+            val intent = Intent(context, MusicService::class.java)
+            ContextCompat.startForegroundService(context, intent)
+            context.startService(intent)
+
+            // TODO: This handle is done in MusicService.kt, exacly inside onStartCommand(). Later, trs to comment this two lines and see if it still works
+            val service = context.musicService
+            Log.d("PLayerViewModel", "Check service variable: $service")
+            service?.startForegroundWithNotification(song, isPlaying)
+            Log.d("PlayerViewModel", "Music service started successfully")
+        } catch (e: Exception) {
+            Log.e("PlayerViewModel", "Error starting music service: ${e.message}", e)
+        }
+
+    }
+
+    // Non-private, maybe will be used in another files
+    fun updateMusicService(isPlaying: Boolean) {
+        try {
+            Log.d("PlayerViewModel", "Attempting to update music service with isPlaying: $isPlaying")
+
+            val context = mainActivity
+            val service = (context as MainActivity).musicService
+            service?.updateNotification(isPlaying)
+
+            Log.d("PlayerViewModel", "Music service updated successfully")
+        } catch (e: Exception) {
+            Log.e("PlayerViewModel", "Error updating music service: ${e.message}", e)
+        }
     }
 
     override fun onCleared() {
