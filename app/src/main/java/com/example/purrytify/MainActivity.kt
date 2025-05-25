@@ -47,6 +47,9 @@ import kotlinx.coroutines.launch
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import android.app.Application
+import com.example.purrytify.model.Song
+import com.example.purrytify.services.RetrofitClient
+import com.example.purrytify.services.SongResponse
 
 // Needed by MusicService to pass the MainActivity to PlayerViewModel (but actually could be in different directory, for modularity,  similiar as HomeViewModelFactory.kt)
 class PlayerViewModelFactory(
@@ -296,6 +299,122 @@ class MainActivity : AppCompatActivity() {
             }
         }
     }
+
+    // Logic to handle deeplink
+    override fun onNewIntent(intent: Intent?) {
+        super.onNewIntent(intent)
+        Log.d("MainActivity", "Deeplink: onNewIntent called with intent: $intent")
+        intent?.data?.let { uri ->
+            Log.d("MainActivity", "Deeplink: Intent data URI: $uri")
+            if ((uri.scheme == "https" || uri.scheme == "http") && uri.host == "purrytify" && uri.pathSegments.firstOrNull() == "song") {
+                val songId = uri.lastPathSegment
+                Log.d("MainActivity", "Deeplink: Extracted songId: $songId")
+                if (!songId.isNullOrEmpty()) {
+                    lifecycleScope.launch {
+                        try {
+                            Log.d("MainActivity", "Deeplink: Fetching song from top global songs with ID: $songId")
+                            val songResponse = RetrofitClient.instance.getTopGlobalSongs()
+                                .find { it.id.toString() == songId }
+                            if (songResponse != null) {
+                                Log.d("MainActivity", "Deeplink: Song, in global songs, found: ${songResponse.title}")
+                                val songModel = Song(
+                                    id = songResponse.id.toString(),
+                                    title = songResponse.title,
+                                    artist = songResponse.artist,
+                                    albumArt = songResponse.artwork,
+                                    audioUrl = songResponse.url,
+                                    isLiked = false, // Default value, update if needed
+                                    isListened = false, // Default value, update if needed
+                                    uploadedAt = null, // Update if needed
+                                    updatedAt = null, // Update if needed
+                                    lastPlayedAt = null, // Update if needed
+                                    rank = songResponse.rank,
+                                    country = songResponse.country,
+                                    isPlaying = false,
+                                    isFromServer = true
+                                )
+                                playerViewModel.playSong(songModel)
+                                val bundle = Bundle().apply {
+                                    putString("songId", songId)
+                                    putParcelable("song", songModel)
+                                }
+                                Log.d("MainActivity", "Deeplink: Navigating to song playback screen")
+                                navController.navigate(R.id.navigation_song_playback, bundle)
+                            } else {
+                                Log.d("MainActivity", "Deeplink: Song not found in global songs, try searching in country songs")
+                                // Still hardcoded for the country
+                                val countryCodes = listOf("ID", "MY", "US", "GB", "CH", "DE", "BR")
+                                var foundSong: SongResponse? = null
+
+                                for (countryCode in countryCodes) {
+                                    Log.d("MainActivity", "Deeplink: Searching in country: $countryCode")
+                                    val countrySongs = RetrofitClient.instance.getTopCountrySongs(countryCode)
+                                    foundSong = countrySongs.find { it.id.toString() == songId }
+                                    if (foundSong != null) {
+                                        Log.d("MainActivity", "Deeplink: Song found in $countryCode: ${foundSong.title}")
+                                        break
+                                    }
+                                }
+
+                                if (foundSong != null) {
+                                    val songModel = Song(
+                                        id = foundSong.id.toString(),
+                                        title = foundSong.title,
+                                        artist = foundSong.artist,
+                                        albumArt = foundSong.artwork,
+                                        audioUrl = foundSong.url,
+                                        isLiked = false, // Default value, update if needed
+                                        isListened = false, // Default value, update if needed
+                                        uploadedAt = null, // Update if needed
+                                        updatedAt = null, // Update if needed
+                                        lastPlayedAt = null, // Update if needed
+                                        rank = foundSong.rank,
+                                        country = foundSong.country,
+                                        isPlaying = false,
+                                        isFromServer = true
+                                    )
+                                    playerViewModel.playSong(songModel)
+                                    val bundle = Bundle().apply {
+                                        putString("songId", songId)
+                                        putParcelable("song", songModel)
+                                    }
+                                    Log.d("MainActivity", "Deeplink: Navigating to song playback screen")
+                                    navController.navigate(R.id.navigation_song_playback, bundle)
+                                } else {
+                                    Log.e("MainActivity", "Deeplink: Song not found in any source, with ID: $songId")
+                                }
+                            }
+                        } catch (e: Exception) {
+                            Log.e("MainActivity", "Deeplink: Error fetching song: ${e.message}", e)
+                        }
+                    }
+                } else {
+                    Log.e("MainActivity", "Deeplink: songId is null or empty")
+                }
+            } else {
+                Log.d("MainActivity", "Deeplink: URI scheme or host does not match expected values")
+            }
+        } ?: Log.d("MainActivity", "Deeplink: Intent data is null")
+    }
+    // TODO: DO NOT REMOVE, commented here maybe will be used later to get song detail by id for handling deeplink
+//    lifecycleScope.launch {
+//        try {
+//            val songResponse = RetrofitClient.instance.getSongById(songId)
+//            val songModel = Song(
+//                id = songResponse.id.toString(),
+//                title = songResponse.title,
+//                artist = songResponse.artist,
+//                albumArt = songResponse.artwork,
+//                audioUrl = songResponse.url,
+//                duration = songResponse.duration,
+//                isFromServer = true
+//            )
+//            playerViewModel.playSong(songModel)
+//            navController.navigate(R.id.navigation_song_playback)
+//        } catch (e: Exception) {
+//            Log.e("MainActivity", "Error fetching song: ${e.message}")
+//        }
+//    }
 }
 
 @Composable

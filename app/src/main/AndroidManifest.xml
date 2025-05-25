@@ -36,12 +36,36 @@
 
         <activity
             android:name=".MainActivity"
-            android:exported="true">
+            android:exported="true"
+            android:launchMode="singleTop">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
+
+            <!-- adding intent filter to our MainActivity-->
+            <!--so we can open our app with the url starting with https and http as well-->
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data
+                    android:scheme="https"
+                    android:host="purrytify"
+                    android:pathPrefix="/song/" />
+            </intent-filter>
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data
+                    android:scheme="http"
+                    android:host="purrytify"
+                    android:pathPrefix="/song/" />
+            </intent-filter>
         </activity>
+
+
 
         <activity
             android:name=".ui.login.LoginActivity"
