@@ -172,6 +172,7 @@ fun MonthAnalyticsCard(
     onTopSongsClick: () -> Unit
 ) {
     val state by viewModel.state.collectAsState()
+    val context = LocalContext.current
 
     val analytics = remember(state.analytics, state.selectedMonth) {
         if (state.selectedMonth == monthYear) state.analytics else viewModel.getAnalyticsForMonth(monthYear)
@@ -193,10 +194,9 @@ fun MonthAnalyticsCard(
         Column(
             modifier = Modifier.padding(20.dp)
         ) {
-            // Month Title
+            // Month Title with Share Button
             Row(
-                modifier = Modifier
-                    .fillMaxWidth(),
+                modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ){
@@ -209,17 +209,27 @@ fun MonthAnalyticsCard(
 
                 IconButton(
                     onClick = {
-                        // Reserved for future features (sharing, etc.)
-                    }
+                        if (!state.isExporting && analytics != null) {
+                            viewModel.shareMonthAsImage(context, monthYear)
+                        }
+                    },
+                    enabled = !state.isExporting && analytics != null
                 ) {
-                    Icon(
-                        imageVector = Icons.Default.Share,
-                        contentDescription = "Share (Coming Soon)",
-                        tint = Color.White,
-                        modifier = Modifier.size(20.dp)
-                    )
+                    if (state.isExporting) {
+                        CircularProgressIndicator(
+                            modifier = Modifier.size(20.dp),
+                            color = SpotifyGreen,
+                            strokeWidth = 2.dp
+                        )
+                    } else {
+                        Icon(
+                            imageVector = Icons.Default.Share,
+                            contentDescription = "Share Month as Image",
+                            tint = if (analytics != null) Color.White else Color.White.copy(alpha = 0.5f),
+                            modifier = Modifier.size(20.dp)
+                        )
+                    }
                 }
-
             }
 
             Spacer(modifier = Modifier.height(16.dp))
