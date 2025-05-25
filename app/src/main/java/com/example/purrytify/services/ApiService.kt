@@ -150,5 +150,20 @@ interface ApiService {
         @Part profilePhoto: okhttp3.MultipartBody.Part? = null
     ): Call<UserProfileResponse>
 
-
+    /**
+     * Retrieves a song by its unique ID.
+     *
+     * @param songId The unique identifier of the song to retrieve.
+     * @return A `SongResponse` object containing details about the song, such as title, artist, artwork, URL, duration, country, rank, and timestamps.
+     *
+     * This function is a suspend function and should be called from a coroutine or another suspend function.
+     *
+     * Example usage:
+     * ```
+     * val song = apiService.getSongById("12345")
+     * println("Song Title: ${song.title}")
+     * ```
+     */
+    @GET("/api/songs/{song_id}")
+    suspend fun getSongById(@Path("song_id") songId: String): SongResponse
 }

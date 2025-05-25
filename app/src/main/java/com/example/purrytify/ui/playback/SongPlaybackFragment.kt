@@ -65,6 +65,7 @@ class SongPlaybackFragment : Fragment() {
 
     private lateinit var btnShuffle: ImageButton
     private lateinit var btnRepeat: ImageButton
+    private lateinit var btnShare: ImageButton
 
     override fun onCreateView(
         inflater: LayoutInflater,
@@ -228,6 +229,7 @@ class SongPlaybackFragment : Fragment() {
         btnPrev = view.findViewById(R.id.btn_prev)
         btnEditSong = view.findViewById(R.id.btn_edit_delete_song)
         btnDownload = view.findViewById(R.id.btn_download)
+        btnShare = view.findViewById(R.id.btn_share)
         btnFavorite = view.findViewById(R.id.btn_favorite)
         textCurrentTime = view.findViewById(R.id.text_current_time)
         textTotalTime = view.findViewById(R.id.text_total_time)
@@ -297,6 +299,27 @@ class SongPlaybackFragment : Fragment() {
         btnRepeat.setOnClickListener {
             Log.d("SongPlayback", "Repeat button clicked")
             viewModel.cycleRepeatMode()
+        }
+
+        btnShare.setOnClickListener {
+            val currentSong = viewModel.currentSong.value
+            if (currentSong != null && currentSong.isFromServer) {
+                // Can be https or http. In this case, https used
+                val shareUrl = "https://purrytify/song/${currentSong.id}"
+                val shareIntent = Intent(Intent.ACTION_SEND).apply {
+                    type = "text/plain"
+                    putExtra(Intent.EXTRA_TEXT, "Check out this song on Purrytify: $shareUrl")
+                }
+                Log.d("SongPlayback", "Sharing song with ID: ${currentSong.id}, URL: $shareUrl")
+                try {
+                    startActivity(Intent.createChooser(shareIntent, "Share Song"))
+                } catch (e: Exception) {
+                    Log.e("SongPlayback", "Error while sharing song: ${e.message}", e)
+                }
+            } else {
+                Log.d("SongPlayback", "Share action failed: currentSong is null or not from server")
+                Toast.makeText(requireContext(), "Only songs from the server can be shared.", Toast.LENGTH_SHORT).show()
+            }
         }
     }
 
