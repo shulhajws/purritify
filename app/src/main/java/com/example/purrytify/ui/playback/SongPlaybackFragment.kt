@@ -115,9 +115,10 @@ class SongPlaybackFragment : Fragment() {
         // Playing Song
         if (checkAndRequestPermissions()) {
             val songId = arguments?.getString("songId")
-            songId?.let {
-                Log.d("SongPlayback", "Attempting to play song with ID: $songId")
-                viewModel.playSongById(it)
+            val song = arguments?.getParcelable<Song>("song")
+            song?.let {
+                Log.d("SongPlayback", "Attempting to play song with ID: ${it.id}, title: ${it.title}")
+                viewModel.playSongBySongModel(it)
             }
         }
 
@@ -168,11 +169,16 @@ class SongPlaybackFragment : Fragment() {
         super.onResume()
         Log.d("SongPlayback", "onResume called")
 
-        val songId = arguments?.getString("songId")
-        songId?.let {
+        val song = arguments?.getParcelable<Song>("song")
+        song?.let {
+            // Check the song if exist in local db (only check if not from server)
+            val songToResume:Song? = if (it.isFromServer) {
+                song
+            } else {
+                viewModel.getSongById(it.id)
+            }
             // Check if the song exists
-            val song = viewModel.getSongById(it)
-            if (song == null) {
+            if (songToResume == null) {
                 Log.d("SongPlayback", "Song no longer exists in onResume, navigating away")
                 navController.navigateUp()
             }
@@ -524,11 +530,11 @@ class SongPlaybackFragment : Fragment() {
         if (requestCode == REQUEST_PERMISSION_CODE) {
             if (grantResults.isNotEmpty() && grantResults.all { it == PackageManager.PERMISSION_GRANTED }) {
                 // Permission granted, retry playing the song
-                Log.d("Permissions", "Storage permission granted")
+                Log.d("SongPlayback", "Storage permission granted")
 
-                val songId = arguments?.getString("songId")
-                songId?.let {
-                    val currentSong = viewModel.getSongById(it)
+                val song = arguments?.getParcelable<Song>("song")
+                song?.let {
+                    val currentSong = viewModel.getSongById(it.id)
                     currentSong?.let { song ->
                         if (song.audioUrl.startsWith("content://")) {
                             // Return if we couldn't get URI permission
@@ -541,7 +547,7 @@ class SongPlaybackFragment : Fragment() {
                                 return
                             }
                         }
-                        viewModel.playSongById(it)
+                        viewModel.playSongBySongModel(it)
                     }
                 }
             } else {

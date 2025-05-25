@@ -209,35 +209,44 @@ class PlayerViewModel(application: Application) : AndroidViewModel(application) 
         return allSongs.find { it.id == songId }
     }
 
-    fun playSongById(songId: String) {
-        Log.d("PlayerViewModel", "playSongById called with ID: $songId")
+    fun playSongBySongModel(song: Song) {
+        Log.d("PlayerViewModel", "playSongBySongModel called with ID: ${song.id}, title: ${song.title}")
 
         if (_isLoading.value) {
             Log.d("PlayerViewModel", "Songs still loading, queueing request for later")
-            pendingSongRequests.add(songId)
+            pendingSongRequests.add(song.id)
             return
         }
 
-        val song = allSongs.find { it.id == songId }
-        if (song != null) {
-            currentIndex = allSongs.indexOfFirst { it.id == song.id }
-            Log.d("PlayerViewModel", "Found song: ${song.title}")
+        // Load songToPlay from  local database if not from server
+        val songToPlay:Song? = if (song.isFromServer) {
+            song
+        } else {
+            allSongs.find { it.id == song.id }
+        }
 
-            if (_currentSong.value?.id == songId && _isPlaying.value) {
+        if (songToPlay != null) {
+            // Only check in local database if not from server
+            if (!songToPlay.isFromServer) {
+                currentIndex = allSongs.indexOfFirst { it.id == songToPlay.id }
+                Log.d("PlayerViewModel", "Found song: ${songToPlay.title}")
+            }
+
+            if (_currentSong.value?.id == songToPlay.id && _isPlaying.value) {
                 Log.d("PlayerViewModel", "Same song is already playing, ignoring request.")
                 return
             }
 
-            if (_currentSong.value?.id != songId) {
+            if (_currentSong.value?.id != songToPlay.id) {
                 stopCurrentSong()
-                _currentSong.value = song
+                _currentSong.value = songToPlay
             }
 
             clearQueue()
 
-            playSong(song)
+            playSong(songToPlay)
         } else {
-            Log.e("PlayerViewModel", "Song with ID $songId not found")
+            Log.e("PlayerViewModel", "Song with ID ${song.id} maybe not found in local database")
         }
     }
 
