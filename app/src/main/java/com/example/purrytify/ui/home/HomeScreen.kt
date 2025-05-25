@@ -77,7 +77,6 @@ fun HomeScreen(
                     style = MaterialTheme.typography.headlineMedium,
                 )
 
-                // Download All Global button
                 IconButton(
                     onClick = {
                         if (!downloadState.isBulkDownloading) {
@@ -136,7 +135,6 @@ fun HomeScreen(
                     style = MaterialTheme.typography.headlineMedium,
                 )
 
-                // Download All Country button
                 IconButton(
                     onClick = {
                         if (!downloadState.isBulkDownloading) {
@@ -278,7 +276,6 @@ fun NewSongItem(
                     .clip(RoundedCornerShape(8.dp))
             )
 
-            // Download button overlay for server songs
             if (downloadViewModel != null && song.isFromServer) {
                 val isDownloading = downloadState.downloadProgress[song.id]?.isDownloading == true
                 val isCompleted = downloadState.downloadProgress[song.id]?.isCompleted == true

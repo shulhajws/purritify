@@ -45,7 +45,6 @@ class HomeFragment : Fragment() {
         val homeViewModelFactory = HomeViewModelFactory(requireActivity().application, sharedViewModel)
         val homeViewModel = ViewModelProvider(this, homeViewModelFactory)[HomeViewModel::class.java]
 
-        // Initialize DownloadViewModel
         downloadViewModel = ViewModelProvider(
             this,
             ViewModelProvider.AndroidViewModelFactory.getInstance(requireActivity().application)

@@ -11,10 +11,15 @@ import com.example.purrytify.repository.DownloadRepository
 import com.example.purrytify.repository.SongRepository
 import com.example.purrytify.util.DownloadManager
 import com.example.purrytify.util.DownloadProgress
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.suspendCancellableCoroutine
+import kotlin.coroutines.resume
 
 data class DownloadState(
     val downloadingCount: Int = 0,
@@ -37,9 +42,8 @@ class DownloadViewModel(application: Application) : AndroidViewModel(application
     init {
         val database = AppDatabase.getDatabase(application)
         val songRepository = SongRepository(database.songDao())
-        downloadRepository = DownloadRepository(songRepository)
+        downloadRepository = DownloadRepository(songRepository, database.songDao())
 
-        // Observe download manager states
         viewModelScope.launch {
             downloadManager.downloadStates.collect { progressMap ->
                 updateDownloadState(progressMap)
@@ -51,9 +55,6 @@ class DownloadViewModel(application: Application) : AndroidViewModel(application
         currentUserId = userId
     }
 
-    /**
-     * Download a single song from server
-     */
     fun downloadSong(song: Song) {
         val userId = currentUserId ?: return
 
@@ -109,9 +110,6 @@ class DownloadViewModel(application: Application) : AndroidViewModel(application
         }
     }
 
-    /**
-     * Download a single song from SongResponse
-     */
     fun downloadSongResponse(serverSong: SongResponse) {
         val userId = currentUserId ?: return
 
@@ -167,9 +165,6 @@ class DownloadViewModel(application: Application) : AndroidViewModel(application
         }
     }
 
-    /**
-     * Download multiple songs (bulk download)
-     */
     fun downloadSongs(songs: List<Song>) {
         val userId = currentUserId ?: return
 
@@ -180,7 +175,6 @@ class DownloadViewModel(application: Application) : AndroidViewModel(application
 
         viewModelScope.launch {
             try {
-                // Filter out already downloaded songs
                 val undownloadedSongs = downloadRepository.filterUndownloadedSongs(userId, songs)
 
                 if (undownloadedSongs.isEmpty()) {
@@ -191,47 +185,53 @@ class DownloadViewModel(application: Application) : AndroidViewModel(application
                 _downloadState.value = _downloadState.value.copy(isBulkDownloading = true)
                 downloadManager.showToast("Starting bulk download: ${undownloadedSongs.size} songs")
 
-                undownloadedSongs.forEach { song ->
-                    // Add small delay between downloads to avoid overwhelming the server
-                    kotlinx.coroutines.delay(200)
+                coroutineScope {
+                    val jobs = undownloadedSongs.map { song ->
+                        async {
+                            kotlinx.coroutines.delay(500)
 
-                    if (!downloadManager.isDownloading(song.id)) {
-                        downloadManager.startDownload(
-                            songId = song.id,
-                            title = song.title,
-                            artist = song.artist,
-                            downloadUrl = song.audioUrl,
-                            artworkUrl = song.albumArt,
-                            onComplete = { localFilePath, localArtworkPath ->
-                                viewModelScope.launch {
-                                    try {
-                                        downloadRepository.saveDownloadedSong(
-                                            userId = userId,
-                                            serverSong = song,
-                                            localFilePath = localFilePath,
-                                            localArtworkPath = localArtworkPath
-                                        )
-                                        Log.d("DownloadViewModel", "Bulk download completed: ${song.title}")
-                                    } catch (e: Exception) {
-                                        Log.e("DownloadViewModel", "Error saving bulk downloaded song: ${e.message}")
-                                    }
+                            if (!downloadManager.isDownloading(song.id)) {
+                                suspendCancellableCoroutine<Unit> { cont ->
+                                    downloadManager.startDownload(
+                                        songId = song.id,
+                                        title = song.title,
+                                        artist = song.artist,
+                                        downloadUrl = song.audioUrl,
+                                        artworkUrl = song.albumArt,
+                                        onComplete = { localFilePath, localArtworkPath ->
+                                            viewModelScope.launch {
+                                                try {
+                                                    downloadRepository.saveDownloadedSong(
+                                                        userId = userId,
+                                                        serverSong = song,
+                                                        localFilePath = localFilePath,
+                                                        localArtworkPath = localArtworkPath
+                                                    )
+                                                    Log.d("DownloadViewModel", "Bulk download completed: ${song.title}")
+                                                } catch (e: Exception) {
+                                                    Log.e("DownloadViewModel", "Error saving song: ${e.message}")
+                                                } finally {
+                                                    cont.resume(Unit)
+                                                }
+                                            }
+                                        },
+                                        onError = {
+                                            Log.e("DownloadViewModel", "Bulk download failed for ${song.title}: $it")
+                                            cont.resume(Unit)
+                                        }
+                                    )
                                 }
-                            },
-                            onError = { error ->
-                                Log.e("DownloadViewModel", "Bulk download failed for ${song.title}: $error")
                             }
-                        )
+                        }
                     }
+
+                    jobs.awaitAll()
                 }
-
-                // Reset bulk downloading state after a delay
-                kotlinx.coroutines.delay(2000)
-                _downloadState.value = _downloadState.value.copy(isBulkDownloading = false)
-
             } catch (e: Exception) {
                 Log.e("DownloadViewModel", "Error in bulk download: ${e.message}")
-                _downloadState.value = _downloadState.value.copy(isBulkDownloading = false)
                 downloadManager.showToast("Bulk download failed")
+            } finally {
+                _downloadState.value = _downloadState.value.copy(isBulkDownloading = false)
             }
         }
     }

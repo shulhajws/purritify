@@ -51,6 +51,58 @@ interface SongDao {
     WHERE s.id IN (:songIds)
     """)
     suspend fun getSongsByIds(songIds: List<Long>): List<SongBasicData>
+
+    @Query("""
+        SELECT COUNT(*) FROM songs 
+        WHERE userId = :userId 
+        AND title = :title 
+        AND artist = :artist 
+        AND isFromServer = 1
+    """)
+    suspend fun countDownloadedServerSong(userId: Int, title: String, artist: String): Int
+
+    @Query("""
+        SELECT EXISTS(
+            SELECT 1 FROM songs 
+            WHERE userId = :userId 
+            AND title = :title 
+            AND artist = :artist 
+            AND isFromServer = 1
+        )
+    """)
+    suspend fun isServerSongDownloaded(userId: Int, title: String, artist: String): Boolean
+
+    @Query("SELECT * FROM songs WHERE userId = :userId AND isFromServer = 1")
+    suspend fun getDownloadedServerSongs(userId: Int): List<SongEntity>
+
+
+    @Query("SELECT * FROM songs WHERE userId = :userId AND isFromServer = 1 ORDER BY uploadedAt DESC")
+    fun getDownloadedServerSongsLiveData(userId: Int): LiveData<List<SongEntity>>
+
+    @Query("""
+        DELETE FROM songs 
+        WHERE userId = :userId 
+        AND title = :title 
+        AND artist = :artist 
+        AND isFromServer = 1
+    """)
+    suspend fun deleteDownloadedServerSong(userId: Int, title: String, artist: String): Int
+
+    @Query("""
+        SELECT * FROM songs 
+        WHERE userId = :userId 
+        AND title = :title 
+        AND artist = :artist 
+        AND isFromServer = 1 
+        LIMIT 1
+    """)
+    suspend fun getServerSongByTitleAndArtist(userId: Int, title: String, artist: String): SongEntity?
+
+    @Query("SELECT COUNT(*) FROM songs WHERE userId = :userId AND isFromServer = 1")
+    suspend fun countDownloadedServerSongs(userId: Int): Int
+
+    @Query("SELECT COUNT(*) FROM songs WHERE userId = :userId AND isFromServer = 1")
+    fun getDownloadedServerSongsCountFlow(userId: Int): Flow<Int>
 }
 
 data class SongBasicData(

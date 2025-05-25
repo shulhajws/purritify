@@ -1,53 +1,57 @@
 package com.example.purrytify.repository
 
 import android.util.Log
+import com.example.purrytify.data.dao.SongDao
 import com.example.purrytify.data.entity.SongEntity
 import com.example.purrytify.model.Song
 import com.example.purrytify.network.SongResponse
 import java.util.Date
 
-class DownloadRepository(private val songRepository: SongRepository) {
+class DownloadRepository(
+    private val songRepository: SongRepository,
+    private val songDao: SongDao
+) {
 
-    /**
-     * Check if server song is downloaded by title and artist (with user ID)
-     */
     suspend fun isServerSongDownloadedByUser(userId: Int, title: String, artist: String): Boolean {
-        // We need to get songs directly from the DAO since LiveData doesn't work well in suspend functions
-        // This requires a new DAO method or use a different approach
-
-        // For now, let's use a simple approach and check by getting all user songs
-        // TODO: add a specific DAO query method like:
-        // @Query("SELECT COUNT(*) FROM songs WHERE userId = :userId AND title = :title AND artist = :artist AND isFromServer = 1")
-        // suspend fun isServerSongDownloaded(userId: Int, title: String, artist: String): Boolean
-
-        try {
-            // Create a temporary song entity to check
-            // This is a workaround - you should implement a proper DAO method
-            return false // For now, allow all downloads
+        return try {
+            songDao.isServerSongDownloaded(userId, title, artist)
         } catch (e: Exception) {
             Log.e("DownloadRepository", "Error checking if song is downloaded: ${e.message}")
-            return false
+            false
         }
     }
 
-    /**
-     * Remove the problematic method that uses LiveData incorrectly
-     */
-    private suspend fun isServerSongDownloaded(serverSongId: String, title: String, artist: String): Boolean {
-        // This method had issues with LiveData access in suspend functions
-        // Use isServerSongDownloadedByUser instead
-        return false
+    suspend fun countDownloadedServerSong(userId: Int, title: String, artist: String): Int {
+        return try {
+            songDao.countDownloadedServerSong(userId, title, artist)
+        } catch (e: Exception) {
+            Log.e("DownloadRepository", "Error counting downloaded songs: ${e.message}")
+            0
+        }
     }
 
-    /**
-     * Save downloaded server song to local database
-     */
+    suspend fun getServerSongByTitleAndArtist(userId: Int, title: String, artist: String): SongEntity? {
+        return try {
+            songDao.getServerSongByTitleAndArtist(userId, title, artist)
+        } catch (e: Exception) {
+            Log.e("DownloadRepository", "Error getting server song: ${e.message}")
+            null
+        }
+    }
+
     suspend fun saveDownloadedSong(
         userId: Int,
         serverSong: SongResponse,
         localFilePath: String,
         localArtworkPath: String?
     ): Long {
+        if (isServerSongDownloadedByUser(userId, serverSong.title, serverSong.artist)) {
+            Log.w("DownloadRepository", "Song already exists: ${serverSong.title} by ${serverSong.artist}")
+            // Return the existing song's ID instead of creating duplicate
+            val existingSong = getServerSongByTitleAndArtist(userId, serverSong.title, serverSong.artist)
+            return existingSong?.id ?: -1L
+        }
+
         val songEntity = SongEntity(
             id = 0, // Auto-generate new ID for local storage
             userId = userId,
@@ -69,15 +73,20 @@ class DownloadRepository(private val songRepository: SongRepository) {
         return songRepository.insert(songEntity)
     }
 
-    /**
-     * Save downloaded server song to local database (from Song model)
-     */
     suspend fun saveDownloadedSong(
         userId: Int,
         serverSong: Song,
         localFilePath: String,
         localArtworkPath: String?
     ): Long {
+        // Double-check before saving to prevent race conditions
+        if (isServerSongDownloadedByUser(userId, serverSong.title, serverSong.artist)) {
+            Log.w("DownloadRepository", "Song already exists: ${serverSong.title} by ${serverSong.artist}")
+            // Return the existing song's ID instead of creating duplicate
+            val existingSong = getServerSongByTitleAndArtist(userId, serverSong.title, serverSong.artist)
+            return existingSong?.id ?: -1L
+        }
+
         val songEntity = SongEntity(
             id = 0, // Auto-generate new ID for local storage
             userId = userId,
@@ -99,40 +108,36 @@ class DownloadRepository(private val songRepository: SongRepository) {
         return songRepository.insert(songEntity)
     }
 
-    /**
-     * Check if any server songs are already downloaded for bulk operations (SongResponse)
-     */
     suspend fun filterUndownloadedSongResponses(userId: Int, serverSongs: List<SongResponse>): List<SongResponse> {
-        return serverSongs.filter { serverSong ->
-            !isServerSongDownloadedByUser(userId, serverSong.title, serverSong.artist)
+        val undownloadedSongs = mutableListOf<SongResponse>()
+
+        for (serverSong in serverSongs) {
+            if (!isServerSongDownloadedByUser(userId, serverSong.title, serverSong.artist)) {
+                undownloadedSongs.add(serverSong)
+            } else {
+                Log.d("DownloadRepository", "Skipping already downloaded song: ${serverSong.title} by ${serverSong.artist}")
+            }
         }
+
+        Log.d("DownloadRepository", "Filtered ${serverSongs.size} songs to ${undownloadedSongs.size} undownloaded songs")
+        return undownloadedSongs
     }
 
-    /**
-     * Check if any server songs are already downloaded for bulk operations (Song model)
-     */
     suspend fun filterUndownloadedSongs(userId: Int, serverSongs: List<Song>): List<Song> {
-        return serverSongs.filter { serverSong ->
-            !isServerSongDownloadedByUser(userId, serverSong.title, serverSong.artist)
+        val undownloadedSongs = mutableListOf<Song>()
+
+        for (serverSong in serverSongs) {
+            if (!isServerSongDownloadedByUser(userId, serverSong.title, serverSong.artist)) {
+                undownloadedSongs.add(serverSong)
+            } else {
+                Log.d("DownloadRepository", "Skipping already downloaded song: ${serverSong.title} by ${serverSong.artist}")
+            }
         }
+
+        Log.d("DownloadRepository", "Filtered ${serverSongs.size} songs to ${undownloadedSongs.size} undownloaded songs")
+        return undownloadedSongs
     }
 
-    /**
-     * Get all downloaded server songs for a user
-     */
-    suspend fun getDownloadedServerSongs(userId: Int): List<SongEntity> {
-        // This would require a new DAO method, but for now we can filter from existing songs
-        // In a real implementation, you'd add this to your DAO:
-        // @Query("SELECT * FROM songs WHERE userId = :userId AND isFromServer = 1")
-        // suspend fun getDownloadedServerSongs(userId: Int): List<SongEntity>
-
-        // For now, this is a placeholder - you'd need to implement the actual DAO method
-        return emptyList()
-    }
-
-    /**
-     * Parse duration string (mm:ss) to milliseconds
-     */
     private fun parseDurationToMilliseconds(durationString: String): Long {
         return try {
             val parts = durationString.split(":")
@@ -149,9 +154,6 @@ class DownloadRepository(private val songRepository: SongRepository) {
         }
     }
 
-    /**
-     * Delete downloaded song and its files
-     */
     suspend fun deleteDownloadedSong(songId: Long): Boolean {
         return try {
             val song = songRepository.getSongById(songId)
@@ -160,13 +162,15 @@ class DownloadRepository(private val songRepository: SongRepository) {
                 try {
                     val audioFile = java.io.File(song.filePath)
                     if (audioFile.exists()) {
-                        audioFile.delete()
+                        val deleted = audioFile.delete()
+                        Log.d("DownloadRepository", "Audio file deletion result: $deleted for ${song.filePath}")
                     }
 
                     song.artworkPath?.let { artworkPath ->
                         val artworkFile = java.io.File(artworkPath)
                         if (artworkFile.exists()) {
-                            artworkFile.delete()
+                            val deleted = artworkFile.delete()
+                            Log.d("DownloadRepository", "Artwork file deletion result: $deleted for $artworkPath")
                         }
                     }
                 } catch (e: Exception) {
@@ -175,13 +179,27 @@ class DownloadRepository(private val songRepository: SongRepository) {
 
                 // Delete from database
                 songRepository.delete(song)
+                Log.d("DownloadRepository", "Deleted downloaded song: ${song.title} by ${song.artist}")
                 true
             } else {
+                Log.w("DownloadRepository", "Song $songId not found or not a server song")
                 false
             }
         } catch (e: Exception) {
             Log.e("DownloadRepository", "Error deleting downloaded song: ${e.message}")
             false
         }
+    }
+
+
+    suspend fun checkDownloadConflicts(userId: Int, serverSongs: List<Song>): Map<String, Boolean> {
+        val conflictMap = mutableMapOf<String, Boolean>()
+
+        for (song in serverSongs) {
+            val key = "${song.title} - ${song.artist}"
+            conflictMap[key] = isServerSongDownloadedByUser(userId, song.title, song.artist)
+        }
+
+        return conflictMap
     }
 }
