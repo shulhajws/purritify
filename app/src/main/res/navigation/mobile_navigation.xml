@@ -21,6 +21,12 @@
             app:popUpToInclusive="false" >
             <argument android:name="songId" app:argType="string" />
         </action>
+
+        <action
+            android:id="@+id/action_home_to_playlist_detail"
+            app:destination="@id/navigation_playlist_detail"
+            app:enterAnim="@android:anim/slide_in_left"
+            app:exitAnim="@android:anim/slide_out_right" />
     </fragment>
 
     <!-- Library -->
@@ -71,6 +77,24 @@
             app:destination="@id/navigation_sound_capsule_top_songs"
             app:enterAnim="@android:anim/slide_in_left"
             app:exitAnim="@android:anim/slide_out_right" />
+    </fragment>
+
+    <!-- Playlist Detail -->
+    <fragment
+        android:id="@+id/navigation_playlist_detail"
+        android:name="com.example.purrytify.ui.home.PlaylistDetailFragment"
+        android:label="Playlist Detail">
+        <argument
+            android:name="playlist"
+            app:argType="com.example.purrytify.repository.RecommendationPlaylist" />
+
+        <action
+            android:id="@+id/action_playlist_detail_to_playback"
+            app:destination="@id/navigation_song_playback"
+            app:enterAnim="@android:anim/fade_in"
+            app:exitAnim="@android:anim/fade_out">
+            <argument android:name="songId" app:argType="string" />
+        </action>
     </fragment>
 
     <!-- Song Playback -->

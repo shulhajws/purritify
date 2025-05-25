@@ -38,6 +38,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import coil.compose.rememberAsyncImagePainter
 import com.example.purrytify.model.Song
+import com.example.purrytify.repository.RecommendationPlaylist
 import com.example.purrytify.ui.theme.SoftGray
 import com.example.purrytify.ui.theme.SpotifyGreen
 import com.example.purrytify.ui.theme.White
@@ -46,13 +47,16 @@ import com.example.purrytify.ui.theme.White
 fun HomeScreen(
     viewModel: HomeViewModel,
     downloadViewModel: com.example.purrytify.ui.download.DownloadViewModel,
-    onSongClick: (Song) -> Unit
+    recommendationViewModel: RecommendationViewModel,
+    onSongClick: (Song) -> Unit,
+    onPlaylistClick: (RecommendationPlaylist) -> Unit
 ) {
     val newSongs by viewModel.newSongs.collectAsState()
     val recentlyPlayedSongs by viewModel.recentlyPlayedSongs.collectAsState()
     val globalSongs by viewModel.globalSongs.collectAsState()
     val countrySongs by viewModel.countrySongs.collectAsState()
     val downloadState by downloadViewModel.downloadState.collectAsState()
+    val recommendationState by recommendationViewModel.state.collectAsState()
 
     Box(
         modifier = Modifier
@@ -65,6 +69,18 @@ fun HomeScreen(
                 .fillMaxSize()
                 .padding(16.dp)
         ) {
+            // Recommendations Section
+            RecommendationSection(
+                recommendations = recommendationState.playlists,
+                isLoading = recommendationState.isLoading,
+                error = recommendationState.error,
+                onPlaylistClick = onPlaylistClick,
+                onSongClick = onSongClick,
+                onRefresh = { recommendationViewModel.refreshRecommendations() }
+            )
+
+            Spacer(modifier = Modifier.height(32.dp))
+
             // Top Global Section with Download All button
             Row(
                 modifier = Modifier.fillMaxWidth(),
