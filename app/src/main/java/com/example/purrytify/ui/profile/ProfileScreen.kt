@@ -96,6 +96,29 @@ fun ProfileScreen(
     var showImagePickerDialog by remember { mutableStateOf(false) }
     var showLocationDialog by remember { mutableStateOf(false) }
 
+    // Places Picker Launcher
+    val placesPickerLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.StartActivityForResult()
+    ) { result ->
+        editProfileViewModel.handlePlacePickerResult(
+            resultCode = result.resultCode,
+            data = result.data,
+            onLocationSelected = { locationCode ->
+                editProfileViewModel.updateProfile(
+                    context = context,
+                    location = locationCode,
+                    onSuccess = { updatedProfile ->
+                        onProfileUpdated(updatedProfile)
+                        showLocationDialog = false
+                    },
+                    onError = { error ->
+                        Toast.makeText(context, error, Toast.LENGTH_SHORT).show()
+                    }
+                )
+            }
+        )
+    }
+
     // Image Picker Launcher
     val galleryLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetContent()
@@ -478,6 +501,14 @@ fun ProfileScreen(
             },
             onCancelLocationRequest = {
                 editProfileViewModel.cancelLocationRequest()
+            },
+            onPlacesPickerRequested = {
+                try {
+                    val intent = editProfileViewModel.createPlacesPickerIntent()
+                    placesPickerLauncher.launch(intent)
+                } catch (e: Exception) {
+                    Toast.makeText(context, "Could not open location picker: ${e.message}", Toast.LENGTH_SHORT).show()
+                }
             }
         )
     }
@@ -490,7 +521,8 @@ fun LocationSelectionDialog(
     onDismiss: () -> Unit,
     onLocationSelected: (String) -> Unit,
     onCurrentLocationRequested: () -> Unit,
-    onCancelLocationRequest: () -> Unit
+    onCancelLocationRequest: () -> Unit,
+    onPlacesPickerRequested: () -> Unit
 ) {
     val context = LocalContext.current
     val editState by editProfileViewModel.state.collectAsState()
@@ -516,7 +548,7 @@ fun LocationSelectionDialog(
                 Button(
                     onClick = if (editState.isLocationLoading) onCancelLocationRequest else onCurrentLocationRequested,
                     colors = ButtonDefaults.buttonColors(
-                        containerColor = if (editState.isLocationLoading) Color.Red else SpotifyGreen
+                        containerColor = if (editState.isLocationLoading) Color.Red else MaterialTheme.colorScheme.secondary
                     ),
                     modifier = Modifier.fillMaxWidth()
                 ) {
@@ -577,22 +609,23 @@ fun LocationSelectionDialog(
 
                 Spacer(modifier = Modifier.height(16.dp))
 
-                // Maps Reference Button
+                // Places Picker Button
                 Button(
-                    onClick = { editProfileViewModel.openLocationSelector(context) },
-                    enabled = !editState.isLocationLoading,
-                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.secondary),
+                    onClick = onPlacesPickerRequested,
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = SpotifyGreen
+                    ),
                     modifier = Modifier.fillMaxWidth()
                 ) {
                     Icon(Icons.Default.LocationOn, null, modifier = Modifier.size(16.dp))
                     Spacer(modifier = Modifier.width(8.dp))
-                    Text("Explore in Google Maps")
+                    Text("Pick Location from Map")
                 }
 
-                Spacer(modifier = Modifier.height(8.dp))
+                Spacer(modifier = Modifier.height(12.dp))
 
                 Text(
-                    text = "💡 Tip: Use Maps to confirm your location, then select your country from the dropdown above",
+                    text = "💡 Tip: Use 'Pick Location from Map' for the best experience!",
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
                 )

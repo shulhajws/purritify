@@ -17,6 +17,10 @@ import com.example.purrytify.services.RetrofitClient
 import com.example.purrytify.util.TokenManager
 import com.google.android.gms.location.FusedLocationProviderClient
 import com.google.android.gms.location.LocationServices
+import com.google.android.libraries.places.api.Places
+import com.google.android.libraries.places.api.model.Place
+import com.google.android.libraries.places.api.net.PlacesClient
+import com.google.android.libraries.places.widget.Autocomplete
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -48,6 +52,8 @@ class EditProfileViewModel(application: Application) : AndroidViewModel(applicat
     private val fusedLocationClient: FusedLocationProviderClient =
         LocationServices.getFusedLocationProviderClient(application)
 
+    private lateinit var placesClient: PlacesClient
+
     private val countryCodes = mapOf(
         "Indonesia" to "ID",
         "Malaysia" to "MY",
@@ -59,6 +65,104 @@ class EditProfileViewModel(application: Application) : AndroidViewModel(applicat
     )
 
     private var locationTask: com.google.android.gms.tasks.Task<Location>? = null
+
+    init {
+        if (!Places.isInitialized()) {
+            try {
+                Places.initialize(application, getApiKeyFromManifest(application))
+                placesClient = Places.createClient(application)
+            } catch (e: Exception) {
+                Log.e("EditProfileViewModel", "Failed to initialize Places API: ${e.message}")
+                Places.initialize(application, "dummy_key")
+                placesClient = Places.createClient(application)
+            }
+        } else {
+            placesClient = Places.createClient(application)
+        }
+    }
+
+    private fun getApiKeyFromManifest(context: Context): String {
+        return try {
+            val applicationInfo = context.packageManager.getApplicationInfo(
+                context.packageName,
+                android.content.pm.PackageManager.GET_META_DATA
+            )
+            val bundle = applicationInfo.metaData
+            bundle?.getString("com.google.android.geo.API_KEY") ?: "dummy_key"
+        } catch (e: Exception) {
+            Log.e("EditProfileViewModel", "Could not get API key from manifest: ${e.message}")
+            "dummy_key"
+        }
+    }
+
+    fun createPlacesPickerIntent(): Intent {
+        return com.google.android.libraries.places.widget.Autocomplete.IntentBuilder(
+            com.google.android.libraries.places.widget.model.AutocompleteActivityMode.FULLSCREEN,
+            listOf(
+                Place.Field.ID,
+                Place.Field.NAME,
+                Place.Field.ADDRESS,
+                Place.Field.LAT_LNG,
+                Place.Field.ADDRESS_COMPONENTS
+            )
+        )
+            .setTypeFilter(com.google.android.libraries.places.api.model.TypeFilter.REGIONS)
+            .setCountries(listOf("ID", "MY", "US", "GB", "CH", "DE", "BR"))
+            .build(getApplication())
+    }
+
+    fun handlePlacePickerResult(resultCode: Int, data: Intent?, onLocationSelected: (String) -> Unit) {
+        when (resultCode) {
+            android.app.Activity.RESULT_OK -> {
+                data?.let {
+                    try {
+                        val place = Autocomplete.getPlaceFromIntent(data)
+                        Log.i("EditProfileViewModel", "Place: ${place.name}, ${place.id}")
+
+                        val addressComponents = place.addressComponents
+                        var countryCode = "ID" // Default to Indonesia
+
+                        addressComponents?.asList()?.forEach { component ->
+                            if (component.types.contains("country")) {
+                                countryCode = component.shortName ?: "ID"
+                            }
+                        }
+
+                        val mappedCountryCode = when (countryCode.uppercase()) {
+                            "ID" -> "ID"
+                            "MY" -> "MY"
+                            "US" -> "US"
+                            "GB", "UK" -> "GB"
+                            "CH" -> "CH"
+                            "DE" -> "DE"
+                            "BR" -> "BR"
+                            else -> "ID"
+                        }
+
+                        onLocationSelected(mappedCountryCode)
+                    } catch (e: Exception) {
+                        Log.e("EditProfileViewModel", "Error processing place result: ${e.message}")
+                        Toast.makeText(getApplication(), "Error processing location", Toast.LENGTH_SHORT).show()
+                    }
+                }
+            }
+            android.app.Activity.RESULT_CANCELED -> {
+                Log.d("EditProfileViewModel", "Places picker cancelled")
+            }
+            else -> {
+                data?.let {
+                    try {
+                        val status = Autocomplete.getStatusFromIntent(data)
+                        Log.e("EditProfileViewModel", "Places picker error: ${status.statusMessage}")
+                        Toast.makeText(getApplication(), "Location picker error: ${status.statusMessage}", Toast.LENGTH_SHORT).show()
+                    } catch (e: Exception) {
+                        Log.e("EditProfileViewModel", "Places picker failed: ${e.message}")
+                        Toast.makeText(getApplication(), "Location picker failed", Toast.LENGTH_SHORT).show()
+                    }
+                }
+            }
+        }
+    }
 
     fun getCurrentLocation(context: Context, onLocationReceived: (String) -> Unit) {
         _state.value = _state.value.copy(isLocationLoading = true)
@@ -347,15 +451,15 @@ class EditProfileViewModel(application: Application) : AndroidViewModel(applicat
         }
     }
 
-    fun clearError() {
-        _state.value = _state.value.copy(error = null)
-    }
-
     fun getCountryNameFromCode(countryCode: String): String {
         return countryCodes.entries.find { it.value == countryCode }?.key ?: countryCode
     }
 
     fun getAvailableCountries(): List<Pair<String, String>> {
         return countryCodes.map { (name, code) -> name to code }
+    }
+
+    companion object {
+        const val PLACE_PICKER_REQUEST_CODE = 1001
     }
 }

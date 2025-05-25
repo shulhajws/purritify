@@ -40,7 +40,7 @@
 
         <meta-data
             android:name="com.google.android.geo.API_KEY"
-            android:value="YOUR_GOOGLE_PLACES_API_KEY_HERE" />
+            android:value="AIzaSyD9f2YNqHAoHk_XvoOu4tK7bk_JGooyY1E" />
 
         <activity
             android:name=".MainActivity"
@@ -51,8 +51,6 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
 
-            <!-- adding intent filter to our MainActivity-->
-            <!--so we can open our app with the url starting with https and http as well-->
             <intent-filter>
                 <action android:name="android.intent.action.VIEW" />
                 <category android:name="android.intent.category.DEFAULT" />
