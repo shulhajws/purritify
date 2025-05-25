@@ -306,7 +306,7 @@ class MainActivity : AppCompatActivity() {
         Log.d("MainActivity", "Deeplink: onNewIntent called with intent: $intent")
         intent?.data?.let { uri ->
             Log.d("MainActivity", "Deeplink: Intent data URI: $uri")
-            if (uri.scheme == "purrytify" && uri.host == "song") {
+            if ((uri.scheme == "https" || uri.scheme == "http") && uri.host == "purrytify" && uri.pathSegments.firstOrNull() == "song") {
                 val songId = uri.lastPathSegment
                 Log.d("MainActivity", "Deeplink: Extracted songId: $songId")
                 if (!songId.isNullOrEmpty()) {
@@ -334,10 +334,15 @@ class MainActivity : AppCompatActivity() {
                                     isFromServer = true
                                 )
                                 playerViewModel.playSong(songModel)
+                                val bundle = Bundle().apply {
+                                    putString("songId", songId)
+                                    putParcelable("song", songModel)
+                                }
                                 Log.d("MainActivity", "Deeplink: Navigating to song playback screen")
-                                navController.navigate(R.id.navigation_song_playback)
+                                navController.navigate(R.id.navigation_song_playback, bundle)
                             } else {
                                 Log.d("MainActivity", "Deeplink: Song not found in global songs, try searching in country songs")
+                                // Still hardcoded for the country
                                 val countryCodes = listOf("ID", "MY", "US", "GB", "CH", "DE", "BR")
                                 var foundSong: SongResponse? = null
 
@@ -369,8 +374,12 @@ class MainActivity : AppCompatActivity() {
                                         isFromServer = true
                                     )
                                     playerViewModel.playSong(songModel)
+                                    val bundle = Bundle().apply {
+                                        putString("songId", songId)
+                                        putParcelable("song", songModel)
+                                    }
                                     Log.d("MainActivity", "Deeplink: Navigating to song playback screen")
-                                    navController.navigate(R.id.navigation_song_playback)
+                                    navController.navigate(R.id.navigation_song_playback, bundle)
                                 } else {
                                     Log.e("MainActivity", "Deeplink: Song not found in any source, with ID: $songId")
                                 }
