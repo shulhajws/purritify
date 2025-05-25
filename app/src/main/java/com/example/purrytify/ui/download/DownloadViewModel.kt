@@ -110,61 +110,6 @@ class DownloadViewModel(application: Application) : AndroidViewModel(application
         }
     }
 
-    fun downloadSongResponse(serverSong: SongResponse) {
-        val userId = currentUserId ?: return
-
-        viewModelScope.launch {
-            try {
-                // Check if already downloaded
-                if (downloadRepository.isServerSongDownloadedByUser(userId, serverSong.title, serverSong.artist)) {
-                    downloadManager.showToast("Song already downloaded: ${serverSong.title}")
-                    return@launch
-                }
-
-                // Check if already downloading
-                if (downloadManager.isDownloading(serverSong.id.toString())) {
-                    downloadManager.showToast("Song is already downloading: ${serverSong.title}")
-                    return@launch
-                }
-
-                downloadManager.showToast("Starting download: ${serverSong.title}")
-
-                downloadManager.startDownload(
-                    songId = serverSong.id.toString(),
-                    title = serverSong.title,
-                    artist = serverSong.artist,
-                    downloadUrl = serverSong.url,
-                    artworkUrl = serverSong.artwork,
-                    onComplete = { localFilePath, localArtworkPath ->
-                        viewModelScope.launch {
-                            try {
-                                downloadRepository.saveDownloadedSong(
-                                    userId = userId,
-                                    serverSong = serverSong,
-                                    localFilePath = localFilePath,
-                                    localArtworkPath = localArtworkPath
-                                )
-                                downloadManager.showToast("Downloaded: ${serverSong.title}")
-                                Log.d("DownloadViewModel", "Successfully downloaded and saved: ${serverSong.title}")
-                            } catch (e: Exception) {
-                                Log.e("DownloadViewModel", "Error saving downloaded song: ${e.message}")
-                                downloadManager.showToast("Download completed but failed to save: ${serverSong.title}")
-                            }
-                        }
-                    },
-                    onError = { error ->
-                        Log.e("DownloadViewModel", "Download failed for ${serverSong.title}: $error")
-                        downloadManager.showToast("Download failed: ${serverSong.title}")
-                    }
-                )
-
-            } catch (e: Exception) {
-                Log.e("DownloadViewModel", "Error starting download: ${e.message}")
-                downloadManager.showToast("Failed to start download: ${serverSong.title}")
-            }
-        }
-    }
-
     fun downloadSongs(songs: List<Song>) {
         val userId = currentUserId ?: return
 
@@ -236,9 +181,6 @@ class DownloadViewModel(application: Application) : AndroidViewModel(application
         }
     }
 
-    /**
-     * Cancel a specific download
-     */
     fun cancelDownload(songId: String) {
         downloadManager.cancelDownload(songId)
         downloadManager.showToast("Download cancelled")
@@ -252,16 +194,10 @@ class DownloadViewModel(application: Application) : AndroidViewModel(application
         return downloadRepository.isServerSongDownloadedByUser(userId, title, artist)
     }
 
-    /**
-     * Check if a song is currently downloading
-     */
     fun isSongDownloading(songId: String): Boolean {
         return downloadManager.isDownloading(songId)
     }
 
-    /**
-     * Get download progress for a specific song
-     */
     fun getDownloadProgress(songId: String): DownloadProgress? {
         return downloadManager.getDownloadProgress(songId)
     }

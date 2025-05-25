@@ -21,15 +21,6 @@ class DownloadRepository(
         }
     }
 
-    suspend fun countDownloadedServerSong(userId: Int, title: String, artist: String): Int {
-        return try {
-            songDao.countDownloadedServerSong(userId, title, artist)
-        } catch (e: Exception) {
-            Log.e("DownloadRepository", "Error counting downloaded songs: ${e.message}")
-            0
-        }
-    }
-
     suspend fun getServerSongByTitleAndArtist(userId: Int, title: String, artist: String): SongEntity? {
         return try {
             songDao.getServerSongByTitleAndArtist(userId, title, artist)
@@ -108,21 +99,6 @@ class DownloadRepository(
         return songRepository.insert(songEntity)
     }
 
-    suspend fun filterUndownloadedSongResponses(userId: Int, serverSongs: List<SongResponse>): List<SongResponse> {
-        val undownloadedSongs = mutableListOf<SongResponse>()
-
-        for (serverSong in serverSongs) {
-            if (!isServerSongDownloadedByUser(userId, serverSong.title, serverSong.artist)) {
-                undownloadedSongs.add(serverSong)
-            } else {
-                Log.d("DownloadRepository", "Skipping already downloaded song: ${serverSong.title} by ${serverSong.artist}")
-            }
-        }
-
-        Log.d("DownloadRepository", "Filtered ${serverSongs.size} songs to ${undownloadedSongs.size} undownloaded songs")
-        return undownloadedSongs
-    }
-
     suspend fun filterUndownloadedSongs(userId: Int, serverSongs: List<Song>): List<Song> {
         val undownloadedSongs = mutableListOf<Song>()
 
@@ -152,54 +128,5 @@ class DownloadRepository(
             Log.w("DownloadRepository", "Could not parse duration: $durationString")
             0L
         }
-    }
-
-    suspend fun deleteDownloadedSong(songId: Long): Boolean {
-        return try {
-            val song = songRepository.getSongById(songId)
-            if (song != null && song.isFromServer) {
-                // Delete the actual files
-                try {
-                    val audioFile = java.io.File(song.filePath)
-                    if (audioFile.exists()) {
-                        val deleted = audioFile.delete()
-                        Log.d("DownloadRepository", "Audio file deletion result: $deleted for ${song.filePath}")
-                    }
-
-                    song.artworkPath?.let { artworkPath ->
-                        val artworkFile = java.io.File(artworkPath)
-                        if (artworkFile.exists()) {
-                            val deleted = artworkFile.delete()
-                            Log.d("DownloadRepository", "Artwork file deletion result: $deleted for $artworkPath")
-                        }
-                    }
-                } catch (e: Exception) {
-                    Log.w("DownloadRepository", "Could not delete files for song $songId: ${e.message}")
-                }
-
-                // Delete from database
-                songRepository.delete(song)
-                Log.d("DownloadRepository", "Deleted downloaded song: ${song.title} by ${song.artist}")
-                true
-            } else {
-                Log.w("DownloadRepository", "Song $songId not found or not a server song")
-                false
-            }
-        } catch (e: Exception) {
-            Log.e("DownloadRepository", "Error deleting downloaded song: ${e.message}")
-            false
-        }
-    }
-
-
-    suspend fun checkDownloadConflicts(userId: Int, serverSongs: List<Song>): Map<String, Boolean> {
-        val conflictMap = mutableMapOf<String, Boolean>()
-
-        for (song in serverSongs) {
-            val key = "${song.title} - ${song.artist}"
-            conflictMap[key] = isServerSongDownloadedByUser(userId, song.title, song.artist)
-        }
-
-        return conflictMap
     }
 }
