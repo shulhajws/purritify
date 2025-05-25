@@ -112,5 +112,9 @@ dependencies {
     // WorkManager dependency for periodic background tasks and ensures the task runs even if the app is closed
     implementation("androidx.work:work-runtime-ktx:2.8.1")
 
+    // Notification Control dependencies
+    implementation("androidx.media:media:1.6.0")
+    implementation("androidx.core:core-ktx:1.12.0")
+
     debugImplementation("androidx.compose.ui:ui-tooling:$compose_version")
 }
