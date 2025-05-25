@@ -54,6 +54,17 @@
             android:src="@drawable/ic_audio_output"
             android:contentDescription="@string/audio_output" />
 
+        <ImageButton
+            android:id="@+id/btn_share"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_toStartOf="@id/btn_audio_output"
+            android:layout_alignParentTop="true"
+            android:layout_marginEnd="16dp"
+            android:background="@android:color/transparent"
+            android:contentDescription="@string/share_icon"
+            android:src="@drawable/ic_share" />
+
         <ImageView
             android:id="@+id/image_album"
             android:layout_width="match_parent"
@@ -97,23 +108,11 @@
             android:layout_height="30dp"
             android:layout_alignBottom="@id/text_artist"
             android:layout_alignParentEnd="true"
-            android:layout_marginEnd="12dp"
-            android:layout_marginBottom="13dp"
-            android:background="@android:color/transparent"
+            android:layout_marginEnd="1dp"
+            android:layout_marginBottom="24dp"
             android:contentDescription="@string/favorite_icon"
-            android:src="@drawable/ic_fav" />
-
-        <ImageButton
-            android:id="@+id/btn_share"
-            android:layout_width="30dp"
-            android:layout_height="30dp"
-            android:layout_alignBottom="@id/text_artist"
-            android:layout_alignParentEnd="true"
-            android:layout_marginEnd="12dp"
-            android:layout_marginBottom="51dp"
-            android:background="@android:color/transparent"
-            android:contentDescription="@string/share_icon"
-            android:src="@drawable/ic_share" />
+            android:src="@drawable/ic_fav"
+            android:background="@android:color/transparent" />
 
         <SeekBar
             android:id="@+id/seek_bar"
