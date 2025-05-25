@@ -13,7 +13,7 @@ import androidx.core.content.FileProvider
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.purrytify.model.UserProfile
-import com.example.purrytify.network.RetrofitClient
+import com.example.purrytify.services.RetrofitClient
 import com.example.purrytify.util.TokenManager
 import com.google.android.gms.location.FusedLocationProviderClient
 import com.google.android.gms.location.LocationServices
@@ -277,10 +277,10 @@ class EditProfileViewModel(application: Application) : AndroidViewModel(applicat
                 }
 
                 val call = RetrofitClient.instance.updateProfile("Bearer $token", locationBody, photoPart)
-                call.enqueue(object : Callback<com.example.purrytify.network.UserProfileResponse> {
+                call.enqueue(object : Callback<com.example.purrytify.services.UserProfileResponse> {
                     override fun onResponse(
-                        call: Call<com.example.purrytify.network.UserProfileResponse>,
-                        response: Response<com.example.purrytify.network.UserProfileResponse>
+                        call: Call<com.example.purrytify.services.UserProfileResponse>,
+                        response: Response<com.example.purrytify.services.UserProfileResponse>
                     ) {
                         Log.d("EditProfileViewModel", "Response code: ${response.code()}")
                         Log.d("EditProfileViewModel", "Response body: ${response.body()}")
@@ -328,7 +328,7 @@ class EditProfileViewModel(application: Application) : AndroidViewModel(applicat
                         }
                     }
 
-                    override fun onFailure(call: Call<com.example.purrytify.network.UserProfileResponse>, t: Throwable) {
+                    override fun onFailure(call: Call<com.example.purrytify.services.UserProfileResponse>, t: Throwable) {
                         _state.value = _state.value.copy(isUpdatingProfile = false)
                         val errorMessage = "Network error: ${t.message}"
                         onError(errorMessage)
