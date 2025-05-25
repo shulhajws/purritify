@@ -341,18 +341,23 @@ class MainActivity : AppCompatActivity() {
                                 navController.navigate(R.id.navigation_song_playback, bundle)
                             } else {
                                 Log.e("MainActivity", "Deeplink: Song not found with ID: $songId")
+                                Toast.makeText(this@MainActivity, "Song not found with the provided ID", Toast.LENGTH_SHORT).show()
                             }
                         } catch (e: Exception) {
                             Log.e("MainActivity", "Deeplink: Error fetching song by ID: ${e.message}", e)
-                        }
+                            Toast.makeText(this@MainActivity, "Error occurred while fetching the song", Toast.LENGTH_SHORT).show() }
                     }
                 } else {
                     Log.e("MainActivity", "Deeplink: songId is null or empty")
+                    Toast.makeText(this, "Invalid or missing song ID in the link", Toast.LENGTH_SHORT).show()
                 }
             } else {
                 Log.d("MainActivity", "Deeplink: URI scheme or host does not match expected values")
+                Toast.makeText(this, "Invalid link: URI scheme or host does not match", Toast.LENGTH_SHORT).show()
             }
-        } ?: Log.d("MainActivity", "Deeplink: Intent data is null")
+        } ?: Log.d("MainActivity", "Deeplink: Intent data is null").also {
+            Toast.makeText(this, "No data found in the intent", Toast.LENGTH_SHORT).show()
+        }
     }
 }
 
