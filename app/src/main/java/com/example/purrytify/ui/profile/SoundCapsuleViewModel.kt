@@ -11,6 +11,7 @@ import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.purrytify.data.AppDatabase
 import com.example.purrytify.repository.AnalyticsRepository
+import com.example.purrytify.repository.DailyListenData
 import com.example.purrytify.repository.MonthYear
 import com.example.purrytify.repository.MonthlyAnalytics
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -233,6 +234,25 @@ class SoundCapsuleViewModel(application: Application) : AndroidViewModel(applica
 
     fun getAnalyticsForMonth(monthYear: MonthYear): MonthlyAnalytics? {
         return monthlyAnalyticsCache[monthYear]
+    }
+
+    fun loadDailyDataForMonth(monthYear: MonthYear, onDataLoaded: (List<DailyListenData>) -> Unit) {
+        val userId = currentUserId ?: return
+
+        viewModelScope.launch {
+            try {
+                val dailyData = analyticsRepository.getDailyListenTimeForMonth(
+                    userId = userId,
+                    year = monthYear.year,
+                    month = monthYear.month
+                )
+                onDataLoaded(dailyData)
+                Log.d("SoundCapsuleViewModel", "Loaded daily data for ${monthYear.getDisplayName()}: ${dailyData.size} days")
+            } catch (e: Exception) {
+                Log.e("SoundCapsuleViewModel", "Error loading daily data: ${e.message}")
+                onDataLoaded(emptyList())
+            }
+        }
     }
 
     fun exportCompleteAnalytics(context: Context) {
