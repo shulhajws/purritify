@@ -304,7 +304,8 @@ class SongPlaybackFragment : Fragment() {
         btnShare.setOnClickListener {
             val currentSong = viewModel.currentSong.value
             if (currentSong != null && currentSong.isFromServer) {
-                val shareUrl = "purrytify://song/${currentSong.id}"
+                // Can be https or http. In this case, https used
+                val shareUrl = "https://purrytify/song/${currentSong.id}"
                 val shareIntent = Intent(Intent.ACTION_SEND).apply {
                     type = "text/plain"
                     putExtra(Intent.EXTRA_TEXT, "Check out this song on Purrytify: $shareUrl")
