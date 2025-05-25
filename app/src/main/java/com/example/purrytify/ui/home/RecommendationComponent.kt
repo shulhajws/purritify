@@ -36,7 +36,6 @@ fun RecommendationSection(
     isLoading: Boolean,
     error: String?,
     onPlaylistClick: (RecommendationPlaylist) -> Unit,
-    onSongClick: (Song) -> Unit,
     onRefresh: () -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -90,7 +89,6 @@ fun RecommendationSection(
                         RecommendationPlaylistCard(
                             playlist = playlist,
                             onPlaylistClick = { onPlaylistClick(playlist) },
-                            onSongClick = onSongClick
                         )
                     }
                 }
@@ -103,7 +101,6 @@ fun RecommendationSection(
 fun RecommendationPlaylistCard(
     playlist: RecommendationPlaylist,
     onPlaylistClick: () -> Unit,
-    onSongClick: (Song) -> Unit,
     modifier: Modifier = Modifier
 ) {
     Card(

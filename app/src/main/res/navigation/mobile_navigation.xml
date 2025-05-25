@@ -113,7 +113,6 @@
             app:enterAnim="@android:anim/slide_in_left"
             app:exitAnim="@android:anim/slide_out_right"/>
 
-        <!-- Add these back navigation actions -->
         <action
             android:id="@+id/action_song_playback_to_home"
             app:destination="@id/navigation_home"

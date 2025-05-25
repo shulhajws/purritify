@@ -75,7 +75,6 @@ fun HomeScreen(
                 isLoading = recommendationState.isLoading,
                 error = recommendationState.error,
                 onPlaylistClick = onPlaylistClick,
-                onSongClick = onSongClick,
                 onRefresh = { recommendationViewModel.refreshRecommendations() }
             )
 
