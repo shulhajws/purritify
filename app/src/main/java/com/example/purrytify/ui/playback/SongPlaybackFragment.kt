@@ -33,6 +33,7 @@ import com.example.purrytify.ui.download.DownloadViewModel
 import com.example.purrytify.ui.shared.SharedViewModel
 import com.example.purrytify.util.AudioDevice
 import com.example.purrytify.util.AudioRouteManager
+import com.example.purrytify.util.QRCodeUtils
 import com.squareup.picasso.Picasso
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
@@ -325,7 +326,19 @@ class SongPlaybackFragment : Fragment() {
         }
 
         btnQRCode.setOnClickListener {
-
+            val currentSong = viewModel.currentSong.value
+            if (currentSong != null && currentSong.isFromServer) {
+                // Can be https or http. In this case, https used
+                val deepLink = "https://purrytify://song/${currentSong.id}"
+                val qrBitmap = QRCodeUtils.generateQRCode(deepLink)
+                if (qrBitmap != null) {
+                    QRCodeUtils.showQrPreviewDialog(requireContext(), qrBitmap, currentSong.title, currentSong.artist)
+                } else {
+                    Toast.makeText(requireContext(), "Failed to generate QR code", Toast.LENGTH_SHORT).show()
+                }
+            } else {
+                Toast.makeText(requireContext(), "Only songs from the server can be shared via QR", Toast.LENGTH_SHORT).show()
+            }
         }
     }
 
