@@ -115,5 +115,8 @@ dependencies {
     // Google Play Services Location for location access
     implementation("com.google.android.gms:play-services-location:21.0.1")
 
+    // OkHttp for download functionality
+    implementation("com.squareup.okhttp3:okhttp:4.12.0")
+
     debugImplementation("androidx.compose.ui:ui-tooling:$compose_version")
 }
