@@ -199,6 +199,10 @@ class ProfileFragment : Fragment() {
                                 soundCapsuleViewModel = soundCapsuleViewModel,
                                 onSoundCapsuleNavigation = { screen, monthYear ->
                                     navigateToSoundCapsuleScreen(screen, monthYear)
+                                },
+                                onProfileUpdated = { updatedProfile ->
+                                    sharedViewModel.updateGlobalUserProfile(updatedProfile)
+                                    Log.d("ProfileFragment", "Profile updated: ${updatedProfile.username}")
                                 }
                             )
                         }
@@ -219,7 +223,7 @@ class ProfileFragment : Fragment() {
                 "time_listened" -> navController.navigate(R.id.navigation_sound_capsule_time_listened, bundle)
                 "top_artists" -> navController.navigate(R.id.navigation_sound_capsule_top_artists, bundle)
                 "top_songs" -> navController.navigate(R.id.navigation_sound_capsule_top_songs, bundle)
-                else -> Log.w("ProfileFragment", "Unknown sound capsule screen: $screen")
+                else -> Log.w("ProfileFragmenproft", "Unknown sound capsule screen: $screen")
             }
         } catch (e: Exception) {
             Log.e("ProfileFragment", "Error navigating to sound capsule screen: ${e.message}")

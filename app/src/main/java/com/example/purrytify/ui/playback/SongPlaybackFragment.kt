@@ -29,6 +29,7 @@ import androidx.navigation.NavController
 import androidx.navigation.fragment.NavHostFragment
 import com.example.purrytify.R
 import com.example.purrytify.model.Song
+import com.example.purrytify.ui.download.DownloadViewModel
 import com.example.purrytify.ui.shared.SharedViewModel
 import com.example.purrytify.util.AudioDevice
 import com.example.purrytify.util.AudioRouteManager
@@ -46,6 +47,9 @@ class SongPlaybackFragment : Fragment() {
     private lateinit var audioRouteManager: AudioRouteManager
     private lateinit var btnAudioOutput: ImageButton
     private var currentAudioDevice: AudioDevice? = null
+
+    private lateinit var downloadViewModel: DownloadViewModel
+    private lateinit var btnDownload: ImageButton
 
     private lateinit var imageAlbum: ImageView
     private lateinit var textTitle: TextView
@@ -88,6 +92,11 @@ class SongPlaybackFragment : Fragment() {
                 }
             }
         }
+
+        downloadViewModel = ViewModelProvider(
+            this,
+            ViewModelProvider.AndroidViewModelFactory.getInstance(requireActivity().application)
+        )[DownloadViewModel::class.java]
 
         return inflater.inflate(R.layout.fragment_song_playback, container, false)
     }
@@ -218,6 +227,7 @@ class SongPlaybackFragment : Fragment() {
         btnNext = view.findViewById(R.id.btn_next)
         btnPrev = view.findViewById(R.id.btn_prev)
         btnEditSong = view.findViewById(R.id.btn_edit_delete_song)
+        btnDownload = view.findViewById(R.id.btn_download)
         btnFavorite = view.findViewById(R.id.btn_favorite)
         textCurrentTime = view.findViewById(R.id.text_current_time)
         textTotalTime = view.findViewById(R.id.text_total_time)
@@ -271,13 +281,19 @@ class SongPlaybackFragment : Fragment() {
             }
         }
 
-        // Set up Shuffle button click listener
+        btnDownload.setOnClickListener {
+            viewModel.currentSong.value?.let { song ->
+                if (song.isFromServer) {
+                    downloadViewModel.downloadSong(song)
+                }
+            }
+        }
+
         btnShuffle.setOnClickListener {
             Log.d("SongPlayback", "Shuffle button clicked")
             viewModel.toggleShuffle()
         }
 
-        // Set up Repeat button click listener
         btnRepeat.setOnClickListener {
             Log.d("SongPlayback", "Repeat button clicked")
             viewModel.cycleRepeatMode()
@@ -373,6 +389,32 @@ class SongPlaybackFragment : Fragment() {
                 }
             }
         }
+
+        viewLifecycleOwner.lifecycleScope.launch {
+            viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
+                launch {
+                    downloadViewModel.downloadState.collect { downloadState ->
+                        updateDownloadButton(downloadState)
+                    }
+                }
+            }
+        }
+
+        viewLifecycleOwner.lifecycleScope.launch {
+            repeatOnLifecycle(Lifecycle.State.STARTED) {
+                sharedViewModel.globalUserProfile.collect { userProfile ->
+                    userProfile?.let { profile ->
+                        try {
+                            val userId = profile.id.toInt()
+                            downloadViewModel.updateForUser(userId)
+                        } catch (e: NumberFormatException) {
+                            Log.e("SongPlaybackFragment", "Invalid user ID format: ${profile.id}")
+                        }
+                    }
+                }
+            }
+        }
+
     }
 
     private fun updateShuffleButton(isShuffleOn: Boolean) {
@@ -460,6 +502,34 @@ class SongPlaybackFragment : Fragment() {
         } catch (e: Exception) {
             Log.e("SongPlayback", "Error converting song ID: ${e.message}")
             Toast.makeText(requireContext(), "Invalid song ID format", Toast.LENGTH_SHORT).show()
+        }
+    }
+
+    private fun updateDownloadButton(downloadState: com.example.purrytify.ui.download.DownloadState) {
+        val currentSong = viewModel.currentSong.value
+
+        if (currentSong?.isFromServer == true) {
+            btnDownload.visibility = View.VISIBLE
+
+            val isDownloading = downloadState.downloadProgress[currentSong.id]?.isDownloading == true
+            val isCompleted = downloadState.downloadProgress[currentSong.id]?.isCompleted == true
+
+            when {
+                isDownloading -> {
+                    btnDownload.setImageResource(R.drawable.ic_downloading) // You'll need this drawable
+                    btnDownload.isEnabled = false
+                }
+                isCompleted -> {
+                    btnDownload.setImageResource(R.drawable.ic_download_done) // You'll need this drawable
+                    btnDownload.isEnabled = false
+                }
+                else -> {
+                    btnDownload.setImageResource(R.drawable.ic_download)
+                    btnDownload.isEnabled = true
+                }
+            }
+        } else {
+            btnDownload.visibility = View.GONE
         }
     }
 

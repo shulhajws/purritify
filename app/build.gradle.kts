@@ -112,6 +112,12 @@ dependencies {
     // WorkManager dependency for periodic background tasks and ensures the task runs even if the app is closed
     implementation("androidx.work:work-runtime-ktx:2.8.1")
 
+    // Google Play Services Location for location access
+    implementation("com.google.android.gms:play-services-location:21.0.1")
+
+    // OkHttp for download functionality
+    implementation("com.squareup.okhttp3:okhttp:4.12.0")
+
     // Notification Control dependencies
     implementation("androidx.media:media:1.6.0")
     implementation("androidx.core:core-ktx:1.12.0")

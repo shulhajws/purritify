@@ -19,6 +19,11 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Download
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -34,17 +39,21 @@ import androidx.compose.ui.unit.dp
 import coil.compose.rememberAsyncImagePainter
 import com.example.purrytify.model.Song
 import com.example.purrytify.ui.theme.SoftGray
+import com.example.purrytify.ui.theme.SpotifyGreen
 import com.example.purrytify.ui.theme.White
 
 @Composable
 fun HomeScreen(
     viewModel: HomeViewModel,
+    downloadViewModel: com.example.purrytify.ui.download.DownloadViewModel,
     onSongClick: (Song) -> Unit
 ) {
     val newSongs by viewModel.newSongs.collectAsState()
     val recentlyPlayedSongs by viewModel.recentlyPlayedSongs.collectAsState()
     val globalSongs by viewModel.globalSongs.collectAsState()
     val countrySongs by viewModel.countrySongs.collectAsState()
+    val downloadState by downloadViewModel.downloadState.collectAsState()
+
     Box(
         modifier = Modifier
             .fillMaxSize()
@@ -56,13 +65,43 @@ fun HomeScreen(
                 .fillMaxSize()
                 .padding(16.dp)
         ) {
-            // Top Global Section
-            Text(
-                text = "Top 50 Global",
-                color = White,
-                style = MaterialTheme.typography.headlineMedium,
-                modifier = Modifier.padding(bottom = 16.dp)
-            )
+            // Top Global Section with Download All button
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = "Top 50 Global",
+                    color = White,
+                    style = MaterialTheme.typography.headlineMedium,
+                )
+
+                IconButton(
+                    onClick = {
+                        if (!downloadState.isBulkDownloading) {
+                            downloadViewModel.downloadSongs(globalSongs)
+                        }
+                    },
+                    enabled = globalSongs.isNotEmpty() && !downloadState.isBulkDownloading
+                ) {
+                    if (downloadState.isBulkDownloading) {
+                        CircularProgressIndicator(
+                            modifier = Modifier.size(24.dp),
+                            color = SpotifyGreen,
+                            strokeWidth = 2.dp
+                        )
+                    } else {
+                        Icon(
+                            imageVector = Icons.Default.Download,
+                            contentDescription = "Download All Global Songs",
+                            tint = White
+                        )
+                    }
+                }
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
 
             if (globalSongs.isEmpty()) {
                 EmptyStateMessage(message = "No global songs")
@@ -74,6 +113,8 @@ fun HomeScreen(
                     items(globalSongs) { song ->
                         NewSongItem(
                             song = song,
+                            downloadViewModel = downloadViewModel,
+                            downloadState = downloadState,
                             onSongClick = { onSongClick(song) }
                         )
                     }
@@ -82,13 +123,43 @@ fun HomeScreen(
 
             Spacer(modifier = Modifier.height(32.dp))
 
-            // Top Country Section
-            Text(
-                text = "Top 10 Country",
-                color = White,
-                style = MaterialTheme.typography.headlineMedium,
-                modifier = Modifier.padding(bottom = 16.dp)
-            )
+            // Top Country Section with Download All button
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = "Top 10 Country",
+                    color = White,
+                    style = MaterialTheme.typography.headlineMedium,
+                )
+
+                IconButton(
+                    onClick = {
+                        if (!downloadState.isBulkDownloading) {
+                            downloadViewModel.downloadSongs(countrySongs)
+                        }
+                    },
+                    enabled = countrySongs.isNotEmpty() && !downloadState.isBulkDownloading
+                ) {
+                    if (downloadState.isBulkDownloading) {
+                        CircularProgressIndicator(
+                            modifier = Modifier.size(24.dp),
+                            color = SpotifyGreen,
+                            strokeWidth = 2.dp
+                        )
+                    } else {
+                        Icon(
+                            imageVector = Icons.Default.Download,
+                            contentDescription = "Download All Country Songs",
+                            tint = White
+                        )
+                    }
+                }
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
 
             if (countrySongs.isEmpty()) {
                 EmptyStateMessage(message = "No country songs")
@@ -100,6 +171,8 @@ fun HomeScreen(
                     items(countrySongs) { song ->
                         NewSongItem(
                             song = song,
+                            downloadViewModel = downloadViewModel,
+                            downloadState = downloadState,
                             onSongClick = { onSongClick(song) }
                         )
                     }
@@ -108,7 +181,7 @@ fun HomeScreen(
 
             Spacer(modifier = Modifier.height(32.dp))
 
-            // New Songs Section
+            // New Songs Section (local songs, no download needed)
             Text(
                 text = "New songs",
                 color = White,
@@ -126,6 +199,8 @@ fun HomeScreen(
                     items(newSongs) { song ->
                         NewSongItem(
                             song = song,
+                            downloadViewModel = null, // No download for local songs
+                            downloadState = downloadState,
                             onSongClick = { onSongClick(song) }
                         )
                     }
@@ -134,7 +209,7 @@ fun HomeScreen(
 
             Spacer(modifier = Modifier.height(32.dp))
 
-            // Recently Played Section
+            // Recently Played Section (local songs, no download needed)
             Text(
                 text = "Recently played",
                 color = White,
@@ -178,20 +253,76 @@ fun EmptyStateMessage(message: String) {
 }
 
 @Composable
-fun NewSongItem(song: Song, onSongClick: () -> Unit) {
+fun NewSongItem(
+    song: Song,
+    downloadViewModel: com.example.purrytify.ui.download.DownloadViewModel?,
+    downloadState: com.example.purrytify.ui.download.DownloadState,
+    onSongClick: () -> Unit
+) {
     Column(
         modifier = Modifier
             .width(120.dp)
             .clickable(onClick = onSongClick)
     ) {
-        Image(
-            painter = rememberAsyncImagePainter(model = song.albumArt),
-            contentDescription = "${song.title} album art",
-            contentScale = ContentScale.Crop,
-            modifier = Modifier
-                .size(120.dp)
-                .clip(RoundedCornerShape(8.dp))
-        )
+        Box(
+            modifier = Modifier.size(120.dp)
+        ) {
+            Image(
+                painter = rememberAsyncImagePainter(model = song.albumArt),
+                contentDescription = "${song.title} album art",
+                contentScale = ContentScale.Crop,
+                modifier = Modifier
+                    .size(120.dp)
+                    .clip(RoundedCornerShape(8.dp))
+            )
+
+            if (downloadViewModel != null && song.isFromServer) {
+                val isDownloading = downloadState.downloadProgress[song.id]?.isDownloading == true
+                val isCompleted = downloadState.downloadProgress[song.id]?.isCompleted == true
+
+                Box(
+                    modifier = Modifier
+                        .align(Alignment.TopEnd)
+                        .padding(4.dp)
+                ) {
+                    IconButton(
+                        onClick = {
+                            if (!isDownloading && !isCompleted) {
+                                downloadViewModel.downloadSong(song)
+                            }
+                        },
+                        enabled = !isDownloading && !isCompleted,
+                        modifier = Modifier.size(32.dp)
+                    ) {
+                        when {
+                            isDownloading -> {
+                                CircularProgressIndicator(
+                                    modifier = Modifier.size(16.dp),
+                                    color = SpotifyGreen,
+                                    strokeWidth = 2.dp
+                                )
+                            }
+                            isCompleted -> {
+                                Icon(
+                                    imageVector = Icons.Default.Download,
+                                    contentDescription = "Downloaded",
+                                    tint = SpotifyGreen,
+                                    modifier = Modifier.size(16.dp)
+                                )
+                            }
+                            else -> {
+                                Icon(
+                                    imageVector = Icons.Default.Download,
+                                    contentDescription = "Download Song",
+                                    tint = White,
+                                    modifier = Modifier.size(16.dp)
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+        }
 
         Spacer(modifier = Modifier.height(8.dp))
 
@@ -199,7 +330,6 @@ fun NewSongItem(song: Song, onSongClick: () -> Unit) {
             text = song.title,
             color = White,
             style = MaterialTheme.typography.bodyMedium,
-//            fontSize = 14.sp,
             maxLines = 1,
             overflow = TextOverflow.Ellipsis
         )
@@ -208,7 +338,6 @@ fun NewSongItem(song: Song, onSongClick: () -> Unit) {
             text = song.artist,
             style = MaterialTheme.typography.labelMedium,
             color = SoftGray,
-//            fontSize = 12.sp,
             maxLines = 1,
             overflow = TextOverflow.Ellipsis
         )
@@ -241,8 +370,6 @@ fun RecentlyPlayedItem(song: Song, onSongClick: () -> Unit) {
                 text = song.title,
                 color = White,
                 style = MaterialTheme.typography.bodyLarge,
-//                fontSize = 16.sp,
-//                fontWeight = FontWeight.Medium,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis
             )
@@ -251,7 +378,6 @@ fun RecentlyPlayedItem(song: Song, onSongClick: () -> Unit) {
                 text = song.artist,
                 color = SoftGray,
                 style = MaterialTheme.typography.bodyMedium,
-//                fontSize = 14.sp,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis
             )

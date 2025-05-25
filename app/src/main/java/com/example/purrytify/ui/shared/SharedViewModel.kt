@@ -44,6 +44,11 @@ class SharedViewModel : ViewModel() {
         }
     }
 
+    fun updateGlobalUserProfile(userProfile: UserProfile) {
+        _globalUserProfile.value = userProfile
+        Log.d("SharedViewModel", "Global user profile updated: ${userProfile.username}")
+    }
+
     fun clearGlobalUserProfile() {
         _globalUserProfile.value = null
     }
