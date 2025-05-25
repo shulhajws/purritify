@@ -162,7 +162,6 @@ fun ListenTimeSoundCapsuleScreen(
                     item {
                         AdditionalListeningStats(
                             analytics = analytics,
-                            viewModel = viewModel
                         )
                     }
                 }
@@ -212,7 +211,6 @@ fun DailyChartSection(
                 Log.d("SoundCapsuleScreen", "Displaying chart for $monthYear")
                 DailyListenLineChart(
                     dailyData = dailyData,
-                    monthYear = monthYear,
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(200.dp)
@@ -288,7 +286,6 @@ fun DailyChartSection(
 @Composable
 fun DailyListenLineChart(
     dailyData: List<DailyListenData>,
-    monthYear: MonthYear,
     modifier: Modifier = Modifier
 ) {
     val maxMinutes = dailyData.maxOfOrNull { it.listenTimeMinutes } ?: 1
@@ -458,7 +455,6 @@ fun ChartStatItem(
 @Composable
 fun AdditionalListeningStats(
     analytics: com.example.purrytify.repository.MonthlyAnalytics,
-    viewModel: SoundCapsuleViewModel
 ) {
     Card(
         modifier = Modifier.fillMaxWidth(),

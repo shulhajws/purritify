@@ -412,10 +412,6 @@ class SoundCapsuleViewModel(application: Application) : AndroidViewModel(applica
         context.startActivity(Intent.createChooser(shareIntent, "Share Sound Capsule"))
     }
 
-    fun clearError() {
-        _state.update { it.copy(error = null) }
-    }
-
     fun formatDuration(milliseconds: Long): String {
         return analyticsRepository.formatDuration(milliseconds)
     }
